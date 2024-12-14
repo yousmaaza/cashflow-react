@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Upload, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import Dashboard from './ui/Dashboard';
+import Logo from './Logo';
 
 const BankApp = () => {
   const [mode, setMode] = useState('choice'); // 'choice', 'upload', 'view'
@@ -137,9 +138,12 @@ const BankApp = () => {
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
-            Bank Statement Analyzer
-          </h1>
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            <Logo size="xl" className="animate-bounce-slow" />
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
+              Bank Statement Analyzer
+            </h1>
+          </div>
           <p className="text-gray-600 text-lg">
             {mode === 'choice'
               ? 'Choose an option to begin'
