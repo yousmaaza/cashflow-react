@@ -1,259 +1,198 @@
-import React, { useState } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import React, { useState, useEffect } from 'react';
+import Sidebar from './ui/Sidebar';
 import Dashboard from './ui/Dashboard';
-import Logo from './Logo';
+import TransactionsPage from './pages/TransactionsPage';
 
-const BankApp = () => {
-  const [mode, setMode] = useState('choice'); // 'choice', 'upload', 'view'
-  const [transactions, setTransactions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const fileInputRef = React.useRef(null);
+const API_URL = 'http://localhost:8000';
 
-  // Gestion du fichier PDF
-  const handleDrop = async (file) => {
-    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are allowed');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('http://localhost:8000/upload/', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to process PDF');
-      }
-
-      const data = await response.json();
-      setTransactions(data.transactions);
-      setMode('view');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-      setIsDragActive(false);
-    }
-  };
-
-  // Charger les données existantes
-  const loadExistingData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('http://localhost:8000/transactions/');
-      if (!response.ok) {
-        throw new Error('Failed to load transactions');
-      }
-      const data = await response.json();
-      setTransactions(data);
-      setMode('view');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Mise à jour d'une transaction
-  const handleUpdateTransaction = async (updatedTransaction) => {
-    try {
-      const updateData = {
-        type: updatedTransaction.type,
-        categorie: updatedTransaction.categorie
-      };
-
-      const response = await fetch(`http://localhost:8000/transactions/${updatedTransaction.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update transaction');
-      }
-
-      setTransactions(prevTransactions =>
-        prevTransactions.map(t =>
-          t.id === updatedTransaction.id
-            ? { ...t, ...updateData }
-            : t
-        )
-      );
-
-      return true;
-    } catch (error) {
-      setError(error.message);
-      return false;
-    }
-  };
-
-  // Suppression d'une transaction
-  const handleDeleteTransaction = async (transactionId) => {
-    try {
-      const response = await fetch(`http://localhost:8000/transactions/${transactionId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete transaction');
-      }
-
-      setTransactions(prevTransactions =>
-        prevTransactions.filter(t => t.id !== transactionId)
-      );
-
-      return true;
-    } catch (error) {
-      setError('Failed to delete transaction: ' + error.message);
-      return false;
-    }
-  };
-
-  if (mode === 'view' && transactions.length > 0) {
-    return (
-      <Dashboard
-        transactions={transactions}
-        onUpdateTransaction={handleUpdateTransaction}
-        onDeleteTransaction={handleDeleteTransaction}
-      />
-    );
+const calculateStats = (transactions) => {
+  if (!transactions || transactions.length === 0) {
+    return {
+      totalBalance: { value: 0, trend: 0 },
+      avgMonthlyIncome: { value: 0, trend: 0 },
+      avgMonthlyExpenses: { value: 0, trend: 0 }
+    };
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center space-x-4 mb-4">
-            <Logo size="xl" className="animate-bounce-slow" />
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
-              Bank Statement Analyzer
-            </h1>
-          </div>
-          <p className="text-gray-600 text-lg">
-            {mode === 'choice'
-              ? 'Choose an option to begin'
-              : mode === 'upload'
-                ? 'Upload your bank statement'
-                : 'Viewing transactions'}
-          </p>
-        </div>
+  // Calculer le solde total
+  const totalBalance = transactions.reduce((sum, t) => sum + parseFloat(t.montant || 0), 0);
 
-        {/* Écran de choix */}
-        {mode === 'choice' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-12">
-            <button
-              onClick={() => setMode('upload')}
-              className="group p-8 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-center border-2 border-transparent hover:border-blue-500"
-            >
-              <div className="p-4 rounded-full bg-blue-50 w-16 h-16 mx-auto mb-4 group-hover:bg-blue-100 transition-colors">
-                <Upload className="h-8 w-8 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Upload New PDF</h3>
-              <p className="text-gray-600">Process a new bank statement</p>
-            </button>
+  // Organiser les transactions par mois
+  const monthlyData = transactions.reduce((acc, t) => {
+    const date = new Date(t.date);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (!acc[monthKey]) {
+      acc[monthKey] = { incomes: [], expenses: [] };
+    }
+    
+    const amount = parseFloat(t.montant || 0);
+    if (amount > 0) {
+      acc[monthKey].incomes.push(amount);
+    } else {
+      acc[monthKey].expenses.push(Math.abs(amount));
+    }
+    
+    return acc;
+  }, {});
 
-            <button
-              onClick={loadExistingData}
-              className="group p-8 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-center border-2 border-transparent hover:border-green-500"
-            >
-              <div className="p-4 rounded-full bg-green-50 w-16 h-16 mx-auto mb-4 group-hover:bg-green-100 transition-colors">
-                <Upload className="h-8 w-8 text-green-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">View Existing Data</h3>
-              <p className="text-gray-600">Browse previously processed statements</p>
-            </button>
-          </div>
-        )}
+  // Calculer les moyennes mensuelles
+  const monthsCount = Object.keys(monthlyData).length || 1;
+  const monthlyAverages = Object.values(monthlyData).reduce(
+    (acc, { incomes, expenses }) => {
+      acc.totalIncome += incomes.reduce((sum, val) => sum + val, 0);
+      acc.totalExpenses += expenses.reduce((sum, val) => sum + val, 0);
+      return acc;
+    },
+    { totalIncome: 0, totalExpenses: 0 }
+  );
 
-        {/* Zone d'upload */}
-        {mode === 'upload' && (
-          <>
-            <div
-              className={`relative overflow-hidden rounded-xl p-8 text-center cursor-pointer transition-all duration-300
-                ${isDragActive 
-                  ? 'border-2 border-blue-500 bg-blue-50 shadow-lg transform scale-[1.02]' 
-                  : 'border-2 border-gray-200 hover:border-blue-400 bg-white shadow-md hover:shadow-lg'
-                }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragActive(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setIsDragActive(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer.files[0];
-                handleDrop(file);
-              }}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={(e) => handleDrop(e.target.files[0])}
-                accept=".pdf"
-                className="hidden"
-              />
-              <div className="flex flex-col items-center gap-4">
-                <div className={`p-4 rounded-full bg-blue-50 transition-transform duration-300 ${
-                  isDragActive ? 'transform rotate-12' : ''
-                }`}>
-                  <Upload className="h-8 w-8 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    {isDragActive ? "Drop your PDF here" : "Upload your bank statement"}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Drag and drop your PDF file, or click to browse
-                  </p>
-                </div>
-              </div>
+  const avgMonthlyIncome = monthlyAverages.totalIncome / monthsCount;
+  const avgMonthlyExpenses = monthlyAverages.totalExpenses / monthsCount;
+
+  // Calculer les tendances
+  const months = Object.keys(monthlyData).sort();
+  let trend = 0;
+  let incomeTrend = 0;
+  let expensesTrend = 0;
+
+  if (months.length >= 2) {
+    const lastMonth = monthlyData[months[months.length - 1]];
+    const previousMonth = monthlyData[months[months.length - 2]];
+
+    const lastMonthTotal = lastMonth.incomes.reduce((sum, val) => sum + val, 0) -
+                          lastMonth.expenses.reduce((sum, val) => sum + val, 0);
+    const previousMonthTotal = previousMonth.incomes.reduce((sum, val) => sum + val, 0) -
+                              previousMonth.expenses.reduce((sum, val) => sum + val, 0);
+
+    const lastMonthIncome = lastMonth.incomes.reduce((sum, val) => sum + val, 0);
+    const previousMonthIncome = previousMonth.incomes.reduce((sum, val) => sum + val, 0);
+
+    const lastMonthExpenses = lastMonth.expenses.reduce((sum, val) => sum + val, 0);
+    const previousMonthExpenses = previousMonth.expenses.reduce((sum, val) => sum + val, 0);
+
+    trend = previousMonthTotal !== 0 
+      ? ((lastMonthTotal - previousMonthTotal) / Math.abs(previousMonthTotal)) * 100
+      : 0;
+
+    incomeTrend = previousMonthIncome !== 0
+      ? ((lastMonthIncome - previousMonthIncome) / previousMonthIncome) * 100
+      : 0;
+
+    expensesTrend = previousMonthExpenses !== 0
+      ? ((lastMonthExpenses - previousMonthExpenses) / previousMonthExpenses) * 100
+      : 0;
+  }
+
+  return {
+    totalBalance: { 
+      value: totalBalance,
+      trend: trend
+    },
+    avgMonthlyIncome: { 
+      value: avgMonthlyIncome,
+      trend: incomeTrend
+    },
+    avgMonthlyExpenses: { 
+      value: avgMonthlyExpenses,
+      trend: expensesTrend
+    }
+  };
+};
+
+const prepareChartData = (transactions) => {
+  if (!transactions || transactions.length === 0) return [];
+
+  // Organiser les transactions par date
+  const dailyData = transactions.reduce((acc, t) => {
+    const date = new Date(t.date).toLocaleDateString();
+    if (!acc[date]) {
+      acc[date] = { credit: 0, debit: 0 };
+    }
+    const amount = parseFloat(t.montant || 0);
+    if (amount > 0) {
+      acc[date].credit += amount;
+    } else {
+      acc[date].debit += Math.abs(amount);
+    }
+    return acc;
+  }, {});
+
+  // Convertir en tableau et trier par date
+  return Object.entries(dailyData)
+    .map(([date, values]) => ({ date, ...values }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+};
+
+const BankApp = () => {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_URL}/transactions/`);
+      if (!response.ok) throw new Error('Erreur lors du chargement des transactions');
+      const data = await response.json();
+      setTransactions(data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Erreur de chargement:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    const dashboardProps = {
+      transactions,
+      stats: calculateStats(transactions),
+      chartData: prepareChartData(transactions),
+      isLoading
+    };
+
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard {...dashboardProps} />;
+      case 'transactions':
+        return <TransactionsPage 
+          transactions={transactions} 
+          onTransactionsUpdate={loadData}
+          isLoading={isLoading}
+        />;
+      default:
+        return (
+          <div className="p-6">
+            <div className="mb-6 flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
+              </h1>
             </div>
+            <p>Cette page est en cours de développement</p>
+          </div>
+        );
+    }
+  };
 
-            <button
-              onClick={() => setMode('choice')}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              ← Back to options
-            </button>
-          </>
-        )}
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="text-center p-8 bg-white rounded-xl shadow-md">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto"></div>
-            <p className="mt-4 text-gray-600 font-medium">Processing...</p>
+  return (
+    <div className="flex min-h-screen bg-white">
+      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <main className="flex-1 ml-64 bg-gray-50">
+        {error && (
+          <div className="p-4 bg-red-50 text-red-700 border-l-4 border-red-500">
+            {error}
           </div>
         )}
-
-        {/* Error Message */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </div>
+        {renderContent()}
+      </main>
     </div>
   );
 };

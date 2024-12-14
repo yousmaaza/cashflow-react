@@ -1,244 +1,216 @@
-import React, { useState, useMemo } from 'react';
-import { Home, Clock, FileText, Target, Settings, CreditCard, Filter } from 'lucide-react';
-import TransactionTable from './TransactionTable';
-import ChartSection from './ChartSection';
-import FilterModal from './FilterModal';
-import useFilters from '../../hooks/useFilters';
+import React, { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart4, Table, TrendingUp, TrendingDown } from 'lucide-react';
 
-const Dashboard = ({ 
-  transactions, 
-  onUpdateTransaction, 
-  onDeleteTransaction 
-}) => {
-  const [activeNav, setActiveNav] = useState('dashboard');
+const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading }) => {
+  const [viewType, setViewType] = useState('chart');
+  const [periodType, setPeriodType] = useState('Journalier');
+  const [showDebit, setShowDebit] = useState(true);
+  const [showCredit, setShowCredit] = useState(true);
 
-  // Utilisation du hook de filtrage
-  const {
-    filters,
-    setFilters,
-    isFiltersActive,
-    setIsFiltersActive,
-    isFilterModalOpen,
-    setIsFilterModalOpen,
-    filteredTransactions,
-    categories,
-    types,
-    resetFilters,
-    hasActiveFilters
-  } = useFilters(transactions);
-
-  // Calcul des statistiques sur les transactions filtrées
-  const stats = useMemo(() => {
-    if (!filteredTransactions.length) return {
-      totalBalance: 0,
-      averageMonthlyIncome: 0,
-      averageMonthlyExpenses: 0,
-    };
-
-    // Grouper les transactions par mois
-    const monthlyGroups = filteredTransactions.reduce((acc, transaction) => {
-      const date = new Date(transaction.date);
-      const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-      
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          credits: [],
-          debits: []
-        };
-      }
-      
-      if (transaction.montant >= 0) {
-        acc[monthKey].credits.push(transaction.montant);
-      } else {
-        acc[monthKey].debits.push(Math.abs(transaction.montant));
-      }
-      
-      return acc;
-    }, {});
-
-    const totalBalance = filteredTransactions.reduce((sum, t) => sum + t.montant, 0);
-
-    const monthsCount = Object.keys(monthlyGroups).length || 1;
-    
-    const monthlyTotals = Object.values(monthlyGroups).map(month => ({
-      totalCredit: month.credits.reduce((sum, amount) => sum + amount, 0),
-      totalDebit: month.debits.reduce((sum, amount) => sum + amount, 0)
-    }));
-
-    const averageMonthlyIncome = monthlyTotals.reduce((sum, month) => 
-      sum + month.totalCredit, 0) / monthsCount;
-
-    const averageMonthlyExpenses = monthlyTotals.reduce((sum, month) => 
-      sum + month.totalDebit, 0) / monthsCount;
-
-    const sortedMonths = Object.keys(monthlyGroups).sort();
-    const currentMonth = sortedMonths[sortedMonths.length - 1];
-    const previousMonth = sortedMonths[sortedMonths.length - 2];
-
-    let incomeChange = 0;
-    let expensesChange = 0;
-
-    if (currentMonth && previousMonth) {
-      const currentMonthData = monthlyGroups[currentMonth];
-      const previousMonthData = monthlyGroups[previousMonth];
-
-      const currentIncome = currentMonthData.credits.reduce((sum, amount) => sum + amount, 0);
-      const previousIncome = previousMonthData.credits.reduce((sum, amount) => sum + amount, 0);
-      const currentExpenses = currentMonthData.debits.reduce((sum, amount) => sum + amount, 0);
-      const previousExpenses = previousMonthData.debits.reduce((sum, amount) => sum + amount, 0);
-
-      incomeChange = previousIncome === 0 ? 0 :
-        ((currentIncome - previousIncome) / previousIncome) * 100;
-      
-      expensesChange = previousExpenses === 0 ? 0 :
-        ((currentExpenses - previousExpenses) / previousExpenses) * 100;
-    }
-
-    return {
-      totalBalance,
-      averageMonthlyIncome,
-      averageMonthlyExpenses,
-      incomeChange,
-      expensesChange
-    };
-  }, [filteredTransactions]);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      currencyDisplay: 'symbol'
-    }).format(amount).replace('EUR', '€');
+  // Valeurs par défaut pour les statistiques
+  const defaultStats = {
+    totalBalance: { value: 0, trend: 0 },
+    avgMonthlyIncome: { value: 0, trend: 0 },
+    avgMonthlyExpenses: { value: 0, trend: 0 }
   };
 
+  // Utiliser les stats fournies ou les valeurs par défaut
+  const currentStats = {
+    totalBalance: stats.totalBalance || defaultStats.totalBalance,
+    avgMonthlyIncome: stats.avgMonthlyIncome || defaultStats.avgMonthlyIncome,
+    avgMonthlyExpenses: stats.avgMonthlyExpenses || defaultStats.avgMonthlyExpenses
+  };
+
+  const formatCurrency = (value) => {
+    // Convertir en nombre si c'est une chaîne
+    const numValue = typeof value === 'string' ? parseFloat(value.replace(',', '.')) : value;
+    
+    // Vérifier si c'est un nombre valide
+    if (isNaN(numValue)) return '0,00';
+    
+    return numValue.toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const renderTrendIndicator = (trend) => {
+    if (!trend || trend === "NaN" || isNaN(trend)) return null;
+    const trendValue = typeof trend === 'string' ? parseFloat(trend.replace(',', '.')) : trend;
+    if (isNaN(trendValue)) return null;
+    
+    const isPositive = trendValue > 0;
+    const Icon = isPositive ? TrendingUp : TrendingDown;
+    return (
+      <div className="flex items-center">
+        <Icon className={`w-4 h-4 ${isPositive ? 'text-green-500' : 'text-red-500'} mr-1`} />
+        <span className={`${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? '+' : ''}{Math.abs(trendValue).toFixed(1)}%
+        </span>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-blue-900">FinCoach</h1>
+    <div className="p-6 space-y-6">
+      {/* Cartes des statistiques */}
+      <div className="grid grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-gray-600 mb-2">Total Balance</h3>
+          <div className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.totalBalance.value)} €</p>
+            {renderTrendIndicator(currentStats.totalBalance.trend)}
+          </div>
         </div>
-        <nav className="mt-4">
-          {[
-            { name: 'Dashboard', icon: Home, id: 'dashboard' },
-            { name: 'Analytics', icon: Clock, id: 'analytics' },
-            { name: 'Transactions', icon: FileText, id: 'transactions' },
-            { name: 'Goals', icon: Target, id: 'goals' },
-            { name: 'Settings', icon: Settings, id: 'settings' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveNav(item.id)}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-left ${
-                activeNav === item.id
-                  ? 'bg-blue-900 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.name}</span>
-            </button>
-          ))}
-        </nav>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-gray-600 mb-2">Avg Monthly Income</h3>
+          <div className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.avgMonthlyIncome.value)} €</p>
+            {renderTrendIndicator(currentStats.avgMonthlyIncome.trend)}
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-gray-600 mb-2">Avg Monthly Expenses</h3>
+          <div className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.avgMonthlyExpenses.value)} €</p>
+            {renderTrendIndicator(currentStats.avgMonthlyExpenses.trend)}
+          </div>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8 space-y-6">
-          {/* Filters Button */}
-          <div className="flex justify-end">
+      {/* Section graphique */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Évolution des transactions (filtrées)</h3>
+            <div className="flex items-center gap-6">
+              <select
+                value={periodType}
+                onChange={(e) => setPeriodType(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1.5"
+              >
+                <option>Journalier</option>
+                <option>Hebdomadaire</option>
+                <option>Mensuel</option>
+              </select>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showDebit}
+                    onChange={(e) => setShowDebit(e.target.checked)}
+                    className="rounded text-[#1a237e] focus:ring-[#1a237e]"
+                  />
+                  <span>Débit</span>
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showCredit}
+                    onChange={(e) => setShowCredit(e.target.checked)}
+                    className="rounded text-[#1a237e] focus:ring-[#1a237e]"
+                  />
+                  <span>Crédit</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
             <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              onClick={() => setViewType('chart')}
+              className={`p-2 rounded ${viewType === 'chart' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
             >
-              <Filter className={`h-4 w-4 mr-2 ${hasActiveFilters ? 'text-blue-500' : 'text-gray-500'}`} />
-              {hasActiveFilters ? 'Filtres actifs' : 'Filtres'}
+              <BarChart4 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewType('table')}
+              className={`p-2 rounded ${viewType === 'table' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+            >
+              <Table className="w-5 h-5" />
             </button>
           </div>
-
-          {/* Filter Modal */}
-          <FilterModal
-            isOpen={isFilterModalOpen}
-            onClose={() => setIsFilterModalOpen(false)}
-            filters={filters}
-            setFilters={setFilters}
-            isFiltersActive={isFiltersActive}
-            setIsFiltersActive={setIsFiltersActive}
-            categories={categories}
-            types={types}
-            resetFilters={resetFilters}
-          />
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Total Balance */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-gray-600 text-sm font-medium">Total Balance</h3>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">
-                    {formatCurrency(stats.totalBalance)}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <CreditCard className="w-6 h-6 text-blue-900" />
-                </div>
-              </div>
-            </div>
-
-            {/* Average Monthly Income */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-gray-600 text-sm font-medium">Avg Monthly Income</h3>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">
-                    {formatCurrency(stats.averageMonthlyIncome)}
-                  </p>
-                  {stats.incomeChange !== 0 && (
-                    <span className={`text-sm ${
-                      stats.incomeChange >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {stats.incomeChange >= 0 ? '↑' : '↓'} {Math.abs(stats.incomeChange).toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Average Monthly Expenses */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-gray-600 text-sm font-medium">Avg Monthly Expenses</h3>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">
-                    {formatCurrency(stats.averageMonthlyExpenses)}
-                  </p>
-                  {stats.expensesChange !== 0 && (
-                    <span className={`text-sm ${
-                      stats.expensesChange <= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {stats.expensesChange >= 0 ? '↑' : '↓'} {Math.abs(stats.expensesChange).toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Charts and Table */}
-          <div className="space-y-6">
-            <ChartSection 
-              transactions={transactions}
-              filteredTransactions={filteredTransactions} 
-            />
-            
-            <TransactionTable
-              transactions={filteredTransactions}
-              onUpdateTransaction={onUpdateTransaction}
-              onDeleteTransaction={onDeleteTransaction}
-            />
-          </div>
         </div>
+
+        {viewType === 'chart' ? (
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" />
+                <YAxis
+                  tickFormatter={(value) => `${formatCurrency(value)} €`}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${formatCurrency(value)} €`]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                {showDebit && (
+                  <Line
+                    type="monotone"
+                    dataKey="debit"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Débit"
+                  />
+                )}
+                {showCredit && (
+                  <Line
+                    type="monotone"
+                    dataKey="credit"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Crédit"
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  {showDebit && <th className="px-4 py-2 text-right">Débit</th>}
+                  {showCredit && <th className="px-4 py-2 text-right">Crédit</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map((item, index) => (
+                  <tr key={index} className="border-t border-gray-100">
+                    <td className="px-4 py-2">{item.date}</td>
+                    {showDebit && (
+                      <td className="px-4 py-2 text-right text-red-500">
+                        {item.debit ? `-${formatCurrency(item.debit)} €` : '-'}
+                      </td>
+                    )}
+                    {showCredit && (
+                      <td className="px-4 py-2 text-right text-green-500">
+                        {item.credit ? `+${formatCurrency(item.credit)} €` : '-'}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
