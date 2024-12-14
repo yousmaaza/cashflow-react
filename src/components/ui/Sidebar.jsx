@@ -3,16 +3,18 @@ import { Home, Clock, FileText, Target, Settings } from 'lucide-react';
 import Logo from '../Logo';
 
 const Sidebar = ({ currentPage, onPageChange }) => {
+  console.log('Sidebar rendering, currentPage:', currentPage); // Debug log
+
   const menuItems = [
-    { id: 'dashboard', icon: Home, text: 'Dashboard', color: 'text-[#1a237e]' },
-    { id: 'analytics', icon: Clock, text: 'Analytics', color: 'text-[#1a237e]' },
-    { id: 'transactions', icon: FileText, text: 'Transactions', color: 'text-[#1a237e]' },
-    { id: 'goals', icon: Target, text: 'Goals', color: 'text-[#1a237e]' },
-    { id: 'settings', icon: Settings, text: 'Settings', color: 'text-[#1a237e]' }
+    { id: 'dashboard', icon: Home, text: 'Dashboard' },
+    { id: 'analytics', icon: Clock, text: 'Analytics' },
+    { id: 'transactions', icon: FileText, text: 'Transactions' },
+    { id: 'goals', icon: Target, text: 'Goals' },
+    { id: 'settings', icon: Settings, text: 'Settings' }
   ];
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 fixed left-0 top-0 overflow-y-auto">
+    <aside className="w-64 h-screen bg-white border-r border-gray-200 fixed left-0 top-0">
       <div className="p-6">
         <div className="flex items-center gap-3">
           <Logo size="sm" />
@@ -29,7 +31,7 @@ const Sidebar = ({ currentPage, onPageChange }) => {
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`w-full flex items-center px-6 py-3 ${isActive 
+              className={`w-full flex items-center px-6 py-3 text-left ${isActive 
                 ? 'bg-[#1a237e] text-white' 
                 : 'text-gray-600 hover:bg-gray-50'}`}
             >
@@ -39,7 +41,7 @@ const Sidebar = ({ currentPage, onPageChange }) => {
           );
         })}
       </nav>
-    </div>
+    </aside>
   );
 };
 
