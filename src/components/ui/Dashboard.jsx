@@ -2,11 +2,25 @@ import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BarChart4, Table, TrendingUp, TrendingDown } from 'lucide-react';
 
-const Dashboard = ({ transactions, stats, chartData, isLoading }) => {
+const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading }) => {
   const [viewType, setViewType] = useState('chart');
   const [periodType, setPeriodType] = useState('Journalier');
   const [showDebit, setShowDebit] = useState(true);
   const [showCredit, setShowCredit] = useState(true);
+
+  // Valeurs par défaut pour les statistiques
+  const defaultStats = {
+    totalBalance: { value: "0,00", trend: "NaN" },
+    avgMonthlyIncome: { value: "0,00", trend: "NaN" },
+    avgMonthlyExpenses: { value: "0,00", trend: "NaN" }
+  };
+
+  // Utiliser les stats fournies ou les valeurs par défaut
+  const currentStats = {
+    totalBalance: stats.totalBalance || defaultStats.totalBalance,
+    avgMonthlyIncome: stats.avgMonthlyIncome || defaultStats.avgMonthlyIncome,
+    avgMonthlyExpenses: stats.avgMonthlyExpenses || defaultStats.avgMonthlyExpenses
+  };
 
   const formatCurrency = (value) => {
     return Number(value).toLocaleString('fr-FR', {
@@ -16,7 +30,7 @@ const Dashboard = ({ transactions, stats, chartData, isLoading }) => {
   };
 
   const renderTrendIndicator = (trend) => {
-    if (trend === "NaN") return null;
+    if (!trend || trend === "NaN") return null;
     const trendValue = parseFloat(trend);
     const isPositive = trendValue > 0;
     const Icon = isPositive ? TrendingUp : TrendingDown;
@@ -55,24 +69,24 @@ const Dashboard = ({ transactions, stats, chartData, isLoading }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Total Balance</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalBalance.value)} €</p>
-            {renderTrendIndicator(stats.totalBalance.trend)}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.totalBalance.value)} €</p>
+            {renderTrendIndicator(currentStats.totalBalance.trend)}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Avg Monthly Income</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgMonthlyIncome.value)} €</p>
-            {renderTrendIndicator(stats.avgMonthlyIncome.trend)}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.avgMonthlyIncome.value)} €</p>
+            {renderTrendIndicator(currentStats.avgMonthlyIncome.trend)}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Avg Monthly Expenses</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgMonthlyExpenses.value)} €</p>
-            {renderTrendIndicator(stats.avgMonthlyExpenses.trend)}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.avgMonthlyExpenses.value)} €</p>
+            {renderTrendIndicator(currentStats.avgMonthlyExpenses.trend)}
           </div>
         </div>
       </div>
