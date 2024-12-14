@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from './ui/Sidebar';
 import Dashboard from './ui/Dashboard';
 import TransactionsPage from './pages/TransactionsPage';
@@ -129,6 +129,51 @@ const BankApp = () => {
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    dateRange: null,
+    type: '',
+    category: '',
+    minAmount: '',
+    maxAmount: ''
+  });
+
+  // Filtrer les transactions en fonction des filtres
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(transaction => {
+      // Filtre par date
+      if (filters.dateRange) {
+        const transactionDate = new Date(transaction.date);
+        if (filters.dateRange.from && transactionDate < filters.dateRange.from) {
+          return false;
+        }
+        if (filters.dateRange.to && transactionDate > filters.dateRange.to) {
+          return false;
+        }
+      }
+
+      // Filtre par type
+      if (filters.type && transaction.type !== filters.type) {
+        return false;
+      }
+
+      // Filtre par catégorie
+      if (filters.category && transaction.categorie !== filters.category) {
+        return false;
+      }
+
+      // Filtre par montant minimum
+      if (filters.minAmount && parseFloat(transaction.montant) < parseFloat(filters.minAmount)) {
+        return false;
+      }
+
+      // Filtre par montant maximum
+      if (filters.maxAmount && parseFloat(transaction.montant) > parseFloat(filters.maxAmount)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [transactions, filters]);
 
   useEffect(() => {
     loadData();
@@ -151,23 +196,42 @@ const BankApp = () => {
     }
   };
 
+  const resetFilters = () => {
+    setFilters({
+      dateRange: null,
+      type: '',
+      category: '',
+      minAmount: '',
+      maxAmount: ''
+    });
+  };
+
   const renderContent = () => {
+    const sharedProps = {
+      isLoading,
+      onTransactionsUpdate: loadData
+    };
+
     const dashboardProps = {
-      transactions,
-      stats: calculateStats(transactions),
-      chartData: prepareChartData(transactions),
-      isLoading
+      ...sharedProps,
+      transactions: filteredTransactions,
+      stats: calculateStats(filteredTransactions),
+      chartData: prepareChartData(filteredTransactions),
+    };
+
+    const transactionsProps = {
+      ...sharedProps,
+      transactions: filteredTransactions,
+      filters,
+      setFilters,
+      resetFilters
     };
 
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard {...dashboardProps} />;
       case 'transactions':
-        return <TransactionsPage 
-          transactions={transactions} 
-          onTransactionsUpdate={loadData}
-          isLoading={isLoading}
-        />;
+        return <TransactionsPage {...transactionsProps} />;
       default:
         return (
           <div className="p-6">
@@ -184,7 +248,10 @@ const BankApp = () => {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar 
+        currentPage={currentPage} 
+        onPageChange={setCurrentPage} 
+      />
       <main className="flex-1 ml-64 bg-gray-50">
         {error && (
           <div className="p-4 bg-red-50 text-red-700 border-l-4 border-red-500">
