@@ -81,7 +81,7 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
                     className="border-b border-gray-100 hover:bg-gray-50"
                   >
                     <td className="px-4 py-2">{formatDate(transaction.date)}</td>
-                    <td className="px-4 py-2">{transaction.description}</td>
+                    <td className="px-4 py-2">{transaction.libelle}</td>
                     <td className={`px-4 py-2 text-right ${transaction.montant > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatAmount(transaction.montant)}
                     </td>
