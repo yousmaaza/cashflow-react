@@ -3,71 +3,43 @@ import Sidebar from './ui/Sidebar';
 import Dashboard from './ui/Dashboard';
 import TransactionsPage from './pages/TransactionsPage';
 
+const API_URL = 'http://localhost:8000';
+
 const BankApp = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Charger les transactions au démarrage
+  // Charger les transactions et les stats au démarrage
   useEffect(() => {
-    loadTransactions();
+    loadData();
   }, []);
 
-  const loadTransactions = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8000/transactions/');
-      if (!response.ok) {
-        throw new Error('Failed to load transactions');
-      }
-      const data = await response.json();
-      setTransactions(data);
+      setError(null);
+      
+      // Charger les transactions
+      const transactionsResponse = await fetch(`${API_URL}/transactions/`);
+      if (!transactionsResponse.ok) throw new Error('Erreur lors du chargement des transactions');
+      const transactionsData = await transactionsResponse.json();
+      setTransactions(transactionsData);
+
+      // Charger les statistiques
+      const statsResponse = await fetch(`${API_URL}/stats/`);
+      if (!statsResponse.ok) throw new Error('Erreur lors du chargement des statistiques');
+      const statsData = await statsResponse.json();
+      setStats(statsData);
+
     } catch (err) {
       setError(err.message);
-      console.error('Error loading transactions:', err);
+      console.error('Erreur de chargement:', err);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Calculer les statistiques pour le dashboard
-  const calculateStats = () => {
-    if (!transactions.length) return {
-      totalBalance: { value: "0,00", trend: "NaN" },
-      avgMonthlyIncome: { value: "0,00", trend: "NaN" },
-      avgMonthlyExpenses: { value: "0,00", trend: "NaN" }
-    };
-
-    const credits = transactions.filter(t => t.amount > 0).map(t => t.amount);
-    const debits = transactions.filter(t => t.amount < 0).map(t => Math.abs(t.amount));
-
-    const totalBalance = credits.reduce((a, b) => a + b, 0) - debits.reduce((a, b) => a + b, 0);
-    const avgIncome = credits.length ? credits.reduce((a, b) => a + b, 0) / credits.length : 0;
-    const avgExpenses = debits.length ? debits.reduce((a, b) => a + b, 0) / debits.length : 0;
-
-    return {
-      totalBalance: {
-        value: totalBalance.toFixed(2),
-        trend: calculateTrend(totalBalance, transactions)
-      },
-      avgMonthlyIncome: {
-        value: avgIncome.toFixed(2),
-        trend: calculateTrend(avgIncome, credits)
-      },
-      avgMonthlyExpenses: {
-        value: avgExpenses.toFixed(2),
-        trend: calculateTrend(avgExpenses, debits)
-      }
-    };
-  };
-
-  // Calculer la tendance (peut être amélioré selon vos besoins)
-  const calculateTrend = (currentValue, historicalData) => {
-    if (historicalData.length < 2) return "NaN";
-    const previousValue = historicalData[historicalData.length - 2];
-    if (!previousValue) return "NaN";
-    return (((currentValue - previousValue) / previousValue) * 100).toFixed(1);
   };
 
   // Préparer les données pour le graphique
@@ -76,13 +48,13 @@ const BankApp = () => {
       date: new Date(t.date).toLocaleDateString(),
       credit: t.amount > 0 ? t.amount : 0,
       debit: t.amount < 0 ? Math.abs(t.amount) : 0
-    }));
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
   const renderContent = () => {
     const dashboardProps = {
       transactions,
-      stats: calculateStats(),
+      stats,
       chartData: prepareChartData(),
       isLoading
     };
@@ -93,7 +65,7 @@ const BankApp = () => {
       case 'transactions':
         return <TransactionsPage 
           transactions={transactions} 
-          onTransactionsUpdate={loadTransactions}
+          onTransactionsUpdate={loadData}
           isLoading={isLoading}
         />;
       default:
