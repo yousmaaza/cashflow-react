@@ -1,31 +1,42 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BarChart4, Table } from 'lucide-react';
+import { BarChart4, Table, TrendingUp, TrendingDown } from 'lucide-react';
 
-const Dashboard = ({ transactions }) => {
-  const [viewType, setViewType] = useState('chart'); // 'chart' ou 'table'
+const Dashboard = ({ transactions, stats, chartData, isLoading }) => {
+  const [viewType, setViewType] = useState('chart');
   const [periodType, setPeriodType] = useState('Journalier');
   const [showDebit, setShowDebit] = useState(true);
   const [showCredit, setShowCredit] = useState(true);
 
-  // Données d'état factices pour la démo
-  const stats = {
-    totalBalance: {
-      value: "0,00",
-      trend: "NaN"
-    },
-    avgMonthlyIncome: {
-      value: "0,00",
-      trend: "NaN"
-    },
-    avgMonthlyExpenses: {
-      value: "0,00",
-      trend: "NaN"
-    }
+  const formatCurrency = (value) => {
+    return Number(value).toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   };
 
-  // Données graphique factices pour la démo
-  const chartData = [];
+  const renderTrendIndicator = (trend) => {
+    if (trend === "NaN") return null;
+    const trendValue = parseFloat(trend);
+    const isPositive = trendValue > 0;
+    const Icon = isPositive ? TrendingUp : TrendingDown;
+    return (
+      <div className="flex items-center">
+        <Icon className={`w-4 h-4 ${isPositive ? 'text-green-500' : 'text-red-500'} mr-1`} />
+        <span className={`${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? '+' : ''}{trend}%
+        </span>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -44,38 +55,24 @@ const Dashboard = ({ transactions }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Total Balance</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{stats.totalBalance.value} €</p>
-            {stats.totalBalance.trend !== "NaN" && (
-              <div className="flex items-center text-sm">
-                <span className={stats.totalBalance.trend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                  {stats.totalBalance.trend}%
-                </span>
-              </div>
-            )}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalBalance.value)} €</p>
+            {renderTrendIndicator(stats.totalBalance.trend)}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Avg Monthly Income</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{stats.avgMonthlyIncome.value} €</p>
-            {stats.avgMonthlyIncome.trend !== "NaN" && (
-              <div className="flex items-center text-sm">
-                <span className="text-red-500">↓ {stats.avgMonthlyIncome.trend}%</span>
-              </div>
-            )}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgMonthlyIncome.value)} €</p>
+            {renderTrendIndicator(stats.avgMonthlyIncome.trend)}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-gray-600 mb-2">Avg Monthly Expenses</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900">{stats.avgMonthlyExpenses.value} €</p>
-            {stats.avgMonthlyExpenses.trend !== "NaN" && (
-              <div className="flex items-center text-sm">
-                <span className="text-red-500">↓ {stats.avgMonthlyExpenses.trend}%</span>
-              </div>
-            )}
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgMonthlyExpenses.value)} €</p>
+            {renderTrendIndicator(stats.avgMonthlyExpenses.trend)}
           </div>
         </div>
       </div>
@@ -136,34 +133,72 @@ const Dashboard = ({ transactions }) => {
           </div>
         </div>
 
-        <div className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              {showDebit && (
-                <Line
-                  type="monotone"
-                  dataKey="debit"
-                  stroke="#ef4444"
-                  dot={false}
-                  name="Débit"
+        {viewType === 'chart' ? (
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" />
+                <YAxis
+                  tickFormatter={(value) => `${formatCurrency(value)} €`}
                 />
-              )}
-              {showCredit && (
-                <Line
-                  type="monotone"
-                  dataKey="credit"
-                  stroke="#22c55e"
-                  dot={false}
-                  name="Crédit"
+                <Tooltip 
+                  formatter={(value) => [`${formatCurrency(value)} €`]}
+                  labelFormatter={(label) => `Date: ${label}`}
                 />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+                {showDebit && (
+                  <Line
+                    type="monotone"
+                    dataKey="debit"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Débit"
+                  />
+                )}
+                {showCredit && (
+                  <Line
+                    type="monotone"
+                    dataKey="credit"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Crédit"
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  {showDebit && <th className="px-4 py-2 text-right">Débit</th>}
+                  {showCredit && <th className="px-4 py-2 text-right">Crédit</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map((item, index) => (
+                  <tr key={index} className="border-t border-gray-100">
+                    <td className="px-4 py-2">{item.date}</td>
+                    {showDebit && (
+                      <td className="px-4 py-2 text-right text-red-500">
+                        {item.debit ? `-${formatCurrency(item.debit)} €` : '-'}
+                      </td>
+                    )}
+                    {showCredit && (
+                      <td className="px-4 py-2 text-right text-green-500">
+                        {item.credit ? `+${formatCurrency(item.credit)} €` : '-'}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
