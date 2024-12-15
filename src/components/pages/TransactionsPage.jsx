@@ -1,27 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import TransactionUpload from '../ui/TransactionUpload';
-import { Filter, Save, X, Plus } from 'lucide-react';
+import { Filter, Save, X, Trash } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { useLoading } from '../contexts/LoadingContext';
+import LoadingIndicator from '../ui/LoadingIndicator';
 
-const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => {
+const TransactionsPage = ({
+  transactions,
+  onTransactionsUpdate,
+  isLoading,
+  filters,
+  setFilters,
+  resetFilters
+}) => {
+  const { setIsProcessing } = useLoading();
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [toast, setToast] = useState(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [types, setTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isFileProcessing, setIsFileProcessing] = useState(false);
 
-  const types = ['Dépense', 'Revenu', 'Transfert'];
-  const categories = [
-    'Alimentation',
-    'Transport',
-    'Logement',
-    'Loisirs',
-    'Santé',
-    'Services',
-    'Shopping',
-    'Education',
-    'Revenus',
-    'Investissements',
-    'Autres'
-  ];
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/transaction-types');
+        const data = await response.json();
+        setTypes(data);
+      } catch (error) {
+        console.error('Error fetching transaction types:', error);
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/transaction-categories');
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching transaction categories:', error);
+      }
+    };
+
+    fetchTypes();
+    fetchCategories();
+  }, []);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -31,6 +73,8 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
   const handleFileUpload = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
+
+    setIsFileProcessing(true); // Active l'indicateur de chargement
 
     try {
       const response = await fetch('http://localhost:8000/upload/', {
@@ -48,6 +92,8 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
     } catch (error) {
       console.error('Upload error:', error);
       showToast('Erreur lors de l\'import: ' + error.message, 'error');
+    } finally {
+      setIsFileProcessing(false); // Désactive l'indicateur de chargement
     }
   };
 
@@ -55,20 +101,20 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
       return;
     }
-    
+
     try {
       const response = await fetch(`http://localhost:8000/transactions/${transactionId}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete transaction');
+        throw new Error('Échec de la suppression de la transaction');
       }
 
       await onTransactionsUpdate();
       showToast('Transaction supprimée avec succès', 'success');
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('Erreur de suppression :', error);
       showToast('Erreur lors de la suppression', 'error');
     }
   };
@@ -88,7 +134,7 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
     try {
       const value = showNewCategory ? editValue : editValue;
       const field = editingCell.field;
-      
+
       const response = await fetch(`http://localhost:8000/transactions/${transactionId}`, {
         method: 'PUT',
         headers: {
@@ -133,18 +179,17 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
               <select
                 value={editValue}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '_new_') {
+                  if (e.target.value === '_new_') {
                     setShowNewCategory(true);
                     setEditValue('');
                   } else {
-                    setEditValue(value);
+                    setEditValue(e.target.value);
                   }
                 }}
                 className="w-full border border-gray-300 rounded-sm p-1 text-sm"
                 autoFocus
               >
-                <option value="">Sélectionner</option>
+                <option value="_default">Sélectionner</option>
                 {options.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
@@ -158,7 +203,7 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
               className="border border-gray-300 rounded-sm p-1 text-sm"
               autoFocus
             >
-              <option value="">Sélectionner</option>
+              <option value="_default">Sélectionner</option>
               {options.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
@@ -192,7 +237,7 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
 
     const displayValue = currentValue || '-';
     return (
-      <div 
+      <div
         onClick={() => startEditing(transaction.id, field, currentValue)}
         className="cursor-pointer hover:bg-gray-100 rounded p-1 flex items-center gap-1"
       >
@@ -212,8 +257,13 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
     );
   };
 
+  const applyFilters = () => {
+    setIsFilterModalOpen(false);
+  };
+
   return (
     <div className="p-6 space-y-6">
+      <LoadingIndicator isLoading={isFileProcessing} />
       {toast && (
         <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
           toast.type === 'error' ? 'bg-red-100 text-red-800' :
@@ -227,12 +277,123 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-gray-600 mt-1">Gérez vos relevés bancaires et transactions</p>
+          <p className="text-gray-600 mt-1">
+            {transactions.length} transaction(s)
+          </p>
         </div>
-        <button className="px-4 py-2 flex items-center gap-2 text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50">
-          <Filter className="w-5 h-5" />
-          Filtres
-        </button>
+
+        <Dialog open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filtres
+              {Object.values(filters).some(v => v) && (
+                <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs">
+                  {Object.values(filters).filter(v => v).length}
+                </span>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Filtrer les transactions</DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Période
+                </label>
+                <DayPicker
+                  mode="range"
+                  selected={filters.dateRange}
+                  onSelect={(range) => setFilters(prev => ({ ...prev, dateRange: range }))}
+                  className="rounded-md border"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type de transaction
+                </label>
+                <Select
+                  value={filters.type}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_default">Sélectionner</SelectItem>
+                    {types.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catégorie
+                </label>
+                <Select
+                  value={filters.category}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_default">Sélectionner</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Montant min
+                  </label>
+                  <input
+                    type="number"
+                    value={filters.minAmount}
+                    onChange={(e) => setFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                    className="border border-gray-300 rounded-sm p-1 text-sm w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Montant max
+                  </label>
+                  <input
+                    type="number"
+                    value={filters.maxAmount}
+                    onChange={(e) => setFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                    className="border border-gray-300 rounded-sm p-1 text-sm w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-2 flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" /> Réinitialiser
+                </Button>
+                <Button
+                  onClick={applyFilters}
+                >
+                  Appliquer les filtres
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -261,27 +422,21 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
               </thead>
               <tbody>
                 {transactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
+                  <tr key={transaction.id}>
                     <td className="px-4 py-2">{formatDate(transaction.date)}</td>
                     <td className="px-4 py-2">{transaction.libelle}</td>
-                    <td className={`px-4 py-2 text-right ${transaction.montant > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <td className={`px-4 py-2 text-right ${transaction.montant < 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {formatAmount(transaction.montant)}
                     </td>
-                    <td className="px-4 py-2">
-                      {renderEditableCell(transaction, 'type', transaction.type, types)}
-                    </td>
-                    <td className="px-4 py-2">
-                      {renderEditableCell(transaction, 'categorie', transaction.categorie, categories)}
-                    </td>
+                    <td className="px-4 py-2">{renderEditableCell(transaction, 'type', transaction.type, types)}</td>
+                    <td className="px-4 py-2">{renderEditableCell(transaction, 'categorie', transaction.categorie, categories)}</td>
                     <td className="px-4 py-2 text-right">
                       <button
                         onClick={() => handleDelete(transaction.id)}
-                        className="p-1 hover:bg-red-50 rounded-full"
+                        className="text-red-600 hover:text-red-800"
+                        title="Supprimer"
                       >
-                        <X className="h-4 w-4 text-red-500" />
+                        <Trash size={16} />
                       </button>
                     </td>
                   </tr>
@@ -297,6 +452,15 @@ const TransactionsPage = ({ transactions, onTransactionsUpdate, isLoading }) => 
       </div>
     </div>
   );
+};
+
+TransactionsPage.propTypes = {
+  transactions: PropTypes.array.isRequired,
+  onTransactionsUpdate: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  filters: PropTypes.object.isRequired,
+  setFilters: PropTypes.func.isRequired,
+  resetFilters: PropTypes.func.isRequired,
 };
 
 export default TransactionsPage;

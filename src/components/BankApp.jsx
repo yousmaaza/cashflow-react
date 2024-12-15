@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from './ui/Sidebar';
 import Dashboard from './ui/Dashboard';
 import TransactionsPage from './pages/TransactionsPage';
+import LoadingIndicator from './ui/LoadingIndicator';
+import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 
 const API_URL = 'http://localhost:8000';
 
@@ -14,29 +16,26 @@ const calculateStats = (transactions) => {
     };
   }
 
-  // Calculer le solde total
   const totalBalance = transactions.reduce((sum, t) => sum + parseFloat(t.montant || 0), 0);
 
-  // Organiser les transactions par mois
   const monthlyData = transactions.reduce((acc, t) => {
     const date = new Date(t.date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
+
     if (!acc[monthKey]) {
       acc[monthKey] = { incomes: [], expenses: [] };
     }
-    
+
     const amount = parseFloat(t.montant || 0);
     if (amount > 0) {
       acc[monthKey].incomes.push(amount);
     } else {
       acc[monthKey].expenses.push(Math.abs(amount));
     }
-    
+
     return acc;
   }, {});
 
-  // Calculer les moyennes mensuelles
   const monthsCount = Object.keys(monthlyData).length || 1;
   const monthlyAverages = Object.values(monthlyData).reduce(
     (acc, { incomes, expenses }) => {
@@ -50,7 +49,6 @@ const calculateStats = (transactions) => {
   const avgMonthlyIncome = monthlyAverages.totalIncome / monthsCount;
   const avgMonthlyExpenses = monthlyAverages.totalExpenses / monthsCount;
 
-  // Calculer les tendances
   const months = Object.keys(monthlyData).sort();
   let trend = 0;
   let incomeTrend = 0;
@@ -71,7 +69,7 @@ const calculateStats = (transactions) => {
     const lastMonthExpenses = lastMonth.expenses.reduce((sum, val) => sum + val, 0);
     const previousMonthExpenses = previousMonth.expenses.reduce((sum, val) => sum + val, 0);
 
-    trend = previousMonthTotal !== 0 
+    trend = previousMonthTotal !== 0
       ? ((lastMonthTotal - previousMonthTotal) / Math.abs(previousMonthTotal)) * 100
       : 0;
 
@@ -85,15 +83,15 @@ const calculateStats = (transactions) => {
   }
 
   return {
-    totalBalance: { 
+    totalBalance: {
       value: totalBalance,
       trend: trend
     },
-    avgMonthlyIncome: { 
+    avgMonthlyIncome: {
       value: avgMonthlyIncome,
       trend: incomeTrend
     },
-    avgMonthlyExpenses: { 
+    avgMonthlyExpenses: {
       value: avgMonthlyExpenses,
       trend: expensesTrend
     }
@@ -103,7 +101,6 @@ const calculateStats = (transactions) => {
 const prepareChartData = (transactions) => {
   if (!transactions || transactions.length === 0) return [];
 
-  // Organiser les transactions par date
   const dailyData = transactions.reduce((acc, t) => {
     const date = new Date(t.date).toLocaleDateString();
     if (!acc[date]) {
@@ -118,17 +115,71 @@ const prepareChartData = (transactions) => {
     return acc;
   }, {});
 
-  // Convertir en tableau et trier par date
   return Object.entries(dailyData)
     .map(([date, values]) => ({ date, ...values }))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 };
 
-const BankApp = () => {
+const BankAppContent = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isProcessing } = useLoading();
+  const [filters, setFilters] = useState({
+    dateRange: null,
+    type: '',
+    category: '',
+    minAmount: '',
+    maxAmount: ''
+  });
+
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return savedTheme || (prefersDark ? 'dark' : 'light');
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(transaction => {
+      if (filters.dateRange) {
+        const transactionDate = new Date(transaction.date);
+        if (filters.dateRange.from && transactionDate < filters.dateRange.from) {
+          return false;
+        }
+        if (filters.dateRange.to && transactionDate > filters.dateRange.to) {
+          return false;
+        }
+      }
+
+      if (filters.type && transaction.type !== filters.type) {
+        return false;
+      }
+
+      if (filters.category && transaction.categorie !== filters.category) {
+        return false;
+      }
+
+      if (filters.minAmount && parseFloat(transaction.montant) < parseFloat(filters.minAmount)) {
+        return false;
+      }
+
+      if (filters.maxAmount && parseFloat(transaction.montant) > parseFloat(filters.maxAmount)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [transactions, filters]);
 
   useEffect(() => {
     loadData();
@@ -138,7 +189,7 @@ const BankApp = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await fetch(`${API_URL}/transactions/`);
       if (!response.ok) throw new Error('Erreur lors du chargement des transactions');
       const data = await response.json();
@@ -151,49 +202,83 @@ const BankApp = () => {
     }
   };
 
+  const resetFilters = () => {
+    setFilters({
+      dateRange: null,
+      type: '',
+      category: '',
+      minAmount: '',
+      maxAmount: ''
+    });
+  };
+
   const renderContent = () => {
-    const dashboardProps = {
-      transactions,
-      stats: calculateStats(transactions),
-      chartData: prepareChartData(transactions),
-      isLoading
+    const sharedProps = {
+      isLoading: isLoading || isProcessing,
+      onTransactionsUpdate: loadData,
+      transactions: filteredTransactions,
     };
 
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard {...dashboardProps} />;
+        return (
+          <Dashboard
+            {...sharedProps}
+            stats={calculateStats(filteredTransactions)}
+            chartData={prepareChartData(filteredTransactions)}
+          />
+        );
       case 'transactions':
-        return <TransactionsPage 
-          transactions={transactions} 
-          onTransactionsUpdate={loadData}
-          isLoading={isLoading}
-        />;
+        return (
+          <TransactionsPage
+            {...sharedProps}
+            filters={filters}
+            setFilters={setFilters}
+            resetFilters={resetFilters}
+          />
+        );
       default:
         return (
           <div className="p-6">
             <div className="mb-6 flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
               </h1>
             </div>
-            <p>Cette page est en cours de développement</p>
+            <p className="text-gray-600 dark:text-gray-300">
+              Cette page est en cours de développement
+            </p>
           </div>
         );
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <main className="flex-1 ml-64 bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+      <LoadingIndicator />
+      <Sidebar
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        toggleTheme={toggleTheme}
+        theme={theme}
+      />
+      <main className="flex-1 ml-64">
         {error && (
-          <div className="p-4 bg-red-50 text-red-700 border-l-4 border-red-500">
+          <div className="p-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 border-l-4 border-red-500">
             {error}
           </div>
         )}
         {renderContent()}
       </main>
     </div>
+  );
+};
+
+const BankApp = () => {
+  return (
+    <LoadingProvider>
+      <BankAppContent />
+    </LoadingProvider>
   );
 };
 
