@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { BarChart4, Table, TrendingUp, TrendingDown } from 'lucide-react';
 
 const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading }) => {
@@ -153,17 +153,7 @@ const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading })
         {viewType === 'chart' ? (
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorDebit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorCredit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
                   stroke="#e5e7eb" 
@@ -177,6 +167,9 @@ const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading })
                   fontSize={12}
                   tickLine={false}
                   axisLine={{ stroke: '#e5e7eb' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis
                   stroke="#6b7280"
@@ -199,33 +192,24 @@ const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading })
                   labelFormatter={(label) => `Date: ${label}`}
                   className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
                 />
-                {showDebit && (
-                  <Line
-                    type="monotone"
-                    dataKey="debit"
-                    stroke="#ef4444"
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    name="Débit"
-                    fillOpacity={1}
-                    fill="url(#colorDebit)"
-                  />
-                )}
+                <Legend />
                 {showCredit && (
-                  <Line
-                    type="monotone"
+                  <Bar
                     dataKey="credit"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
                     name="Crédit"
-                    fillOpacity={1}
-                    fill="url(#colorCredit)"
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
                   />
                 )}
-              </LineChart>
+                {showDebit && (
+                  <Bar
+                    dataKey="debit"
+                    name="Débit"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                  />
+                )}
+              </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
