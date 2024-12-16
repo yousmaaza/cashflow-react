@@ -120,7 +120,7 @@ const prepareChartData = (transactions) => {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 };
 
-const BankAppContent = () => {
+const BankAppContent = ({ toggleTheme, theme }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,21 +133,6 @@ const BankAppContent = () => {
     minAmount: '',
     maxAmount: ''
   });
-
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return savedTheme || (prefersDark ? 'dark' : 'light');
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
-  };
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
@@ -254,7 +239,7 @@ const BankAppContent = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <LoadingIndicator />
       <Sidebar
         currentPage={currentPage}
@@ -262,7 +247,7 @@ const BankAppContent = () => {
         toggleTheme={toggleTheme}
         theme={theme}
       />
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-64 bg-white dark:bg-gray-900 transition-colors duration-200">
         {error && (
           <div className="p-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 border-l-4 border-red-500">
             {error}
@@ -274,10 +259,10 @@ const BankAppContent = () => {
   );
 };
 
-const BankApp = () => {
+const BankApp = (props) => {
   return (
     <LoadingProvider>
-      <BankAppContent />
+      <BankAppContent {...props} />
     </LoadingProvider>
   );
 };
