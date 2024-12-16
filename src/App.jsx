@@ -9,13 +9,15 @@ function App() {
   );
 
   useEffect(() => {
+    const root = document.documentElement;
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      root.classList.add('dark');
+      root.classList.remove('light');
     } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      root.classList.add('light');
+      root.classList.remove('dark');
     }
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -23,7 +25,7 @@ function App() {
   };
 
   return (
-    <div className={`App ${theme}`}>
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
       <BankApp toggleTheme={toggleTheme} theme={theme} />
     </div>
   );
