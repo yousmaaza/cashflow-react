@@ -1,8 +1,5 @@
 import React from 'react';
-import { 
-  TransactionsBarChart, 
-  TransactionsPieCharts 
-} from '../charts/TransactionsCharts';
+import { TransactionsBarChart, TransactionsPieCharts } from '../charts/TransactionsCharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading }) => {
@@ -53,45 +50,51 @@ const Dashboard = ({ transactions = [], stats = {}, chartData = [], isLoading })
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-screen dark:bg-gray-900">
       {/* Cartes des statistiques */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Balance */}
-        <div className="bg-white dark:bg-gray-900/50 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 transition-colors duration-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-700">
           <h3 className="text-gray-600 dark:text-gray-400 mb-2">Total Balance</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(currentStats.totalBalance.value)} €</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {formatCurrency(currentStats.totalBalance.value)} €
+            </p>
             {renderTrendIndicator(currentStats.totalBalance.trend)}
           </div>
         </div>
 
         {/* Monthly Income */}
-        <div className="bg-white dark:bg-gray-900/50 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 transition-colors duration-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-700">
           <h3 className="text-gray-600 dark:text-gray-400 mb-2">Avg Monthly Income</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(currentStats.avgMonthlyIncome.value)} €</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {formatCurrency(currentStats.avgMonthlyIncome.value)} €
+            </p>
             {renderTrendIndicator(currentStats.avgMonthlyIncome.trend)}
           </div>
         </div>
 
         {/* Monthly Expenses */}
-        <div className="bg-white dark:bg-gray-900/50 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 transition-colors duration-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-700">
           <h3 className="text-gray-600 dark:text-gray-400 mb-2">Avg Monthly Expenses</h3>
           <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(currentStats.avgMonthlyExpenses.value)} €</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {formatCurrency(currentStats.avgMonthlyExpenses.value)} €
+            </p>
             {renderTrendIndicator(currentStats.avgMonthlyExpenses.trend)}
           </div>
         </div>
       </div>
 
       {/* Graphique en barres des transactions */}
-      <div className="bg-white dark:bg-gray-900/50 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-700">
         <TransactionsBarChart data={chartData} />
       </div>
 
-      {/* Graphiques en camembert */}
-      <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
-        <div className="bg-white dark:bg-gray-900/50 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 transition-colors duration-200">
+      {/* Section des graphiques en camembert */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-700">
+        <div className="p-6">
           <TransactionsPieCharts transactions={transactions} />
         </div>
       </div>
