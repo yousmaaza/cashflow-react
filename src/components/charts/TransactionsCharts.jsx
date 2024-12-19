@@ -15,18 +15,19 @@ import {
 
 // Composant pour le graphique en barres des transactions
 export const TransactionsBarChart = ({ data }) => {
+  // Trier les données par date chronologiquement
+  const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      // Si la date n'est pas valide, on essaie de parser le format "DD/MM"
       const parts = dateString.split('/');
       if (parts.length === 2) {
-        return dateString; // On garde le format existant
+        return dateString;
       }
-      return ''; // Date invalide
+      return '';
     }
-    // Format de date français
     return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit'
@@ -40,7 +41,7 @@ export const TransactionsBarChart = ({ data }) => {
           <p className="text-gray-300 font-semibold mb-2">{formatDate(label)}</p>
           {payload.map((entry) => (
             <div key={entry.name} className="flex items-center gap-2">
-              <div 
+              <div
                 className={`w-3 h-3 rounded-full ${
                   entry.name === 'Crédit' ? 'bg-emerald-500' : 'bg-red-500'
                 }`}
@@ -61,7 +62,7 @@ export const TransactionsBarChart = ({ data }) => {
       <h3 className="text-lg font-semibold text-gray-200 mb-6">Évolution des transactions</h3>
       <ResponsiveContainer width="100%" height="90%">
         <BarChart
-          data={data}
+          data={sortedData}
           margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
@@ -119,30 +120,25 @@ export const TransactionsPieCharts = ({ transactions }) => {
     const radius = outerRadius + 30;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const sin = Math.sin(-midAngle * RADIAN);
-    const cos = Math.cos(-midAngle * RADIAN);
-    const textAnchor = cos >= 0 ? 'start' : 'end';
     const percentage = (percent * 100).toFixed(1);
-    
+
     if (percentage < 5) return null; // Ne pas afficher les labels pour les petites valeurs
 
     return (
       <g>
-        {/* Ligne de connexion */}
         <line
-          x1={cx + (outerRadius + 10) * cos}
-          y1={cy + (outerRadius + 10) * sin}
+          x1={cx + (outerRadius + 10) * Math.cos(-midAngle * RADIAN)}
+          y1={cy + (outerRadius + 10) * Math.sin(-midAngle * RADIAN)}
           x2={x}
           y2={y}
           stroke="#6B7280"
           strokeWidth={1}
         />
-        {/* Texte */}
         <text
           x={x}
           y={y}
           fill="#E5E7EB"
-          textAnchor={textAnchor}
+          textAnchor={x > cx ? "start" : "end"}
           dominantBaseline="middle"
           fontSize={12}
         >
@@ -194,7 +190,7 @@ export const TransactionsPieCharts = ({ transactions }) => {
         <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 shadow-lg">
           <p className="text-gray-200 font-semibold">{data.name}</p>
           <p className="text-gray-300">
-            {categoryPieData.includes(data) 
+            {categoryPieData.includes(data)
               ? `${Number(data.value).toFixed(2)}€`
               : `${data.value} transactions`
             }
@@ -228,7 +224,7 @@ export const TransactionsPieCharts = ({ transactions }) => {
                 dataKey="value"
               >
                 {categoryPieData.map((entry, index) => (
-                  <Cell 
+                  <Cell
                     key={`cell-${index}`}
                     fill={colors[index % colors.length]}
                     strokeWidth={1}
@@ -260,7 +256,7 @@ export const TransactionsPieCharts = ({ transactions }) => {
                 dataKey="value"
               >
                 {paymentTypePieData.map((entry, index) => (
-                  <Cell 
+                  <Cell
                     key={`cell-${index}`}
                     fill={colors[index % colors.length]}
                     strokeWidth={1}
@@ -276,3 +272,5 @@ export const TransactionsPieCharts = ({ transactions }) => {
     </div>
   );
 };
+
+export default { TransactionsBarChart, TransactionsPieCharts };
