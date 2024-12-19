@@ -74,7 +74,7 @@ const TransactionsPage = ({
     const formData = new FormData();
     formData.append('file', file);
 
-    setIsFileProcessing(true); // Active l'indicateur de chargement
+    setIsFileProcessing(true);
 
     try {
       const response = await fetch('http://localhost:8000/upload/', {
@@ -93,7 +93,7 @@ const TransactionsPage = ({
       console.error('Upload error:', error);
       showToast('Erreur lors de l\'import: ' + error.message, 'error');
     } finally {
-      setIsFileProcessing(false); // Désactive l'indicateur de chargement
+      setIsFileProcessing(false);
     }
   };
 
@@ -261,6 +261,9 @@ const TransactionsPage = ({
     setIsFilterModalOpen(false);
   };
 
+  // Trier les transactions par date avant l'affichage
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
   return (
     <div className="p-6 space-y-6">
       <LoadingIndicator isLoading={isFileProcessing} />
@@ -385,9 +388,7 @@ const TransactionsPage = ({
                 >
                   <X className="w-4 h-4" /> Réinitialiser
                 </Button>
-                <Button
-                  onClick={applyFilters}
-                >
+                <Button onClick={applyFilters}>
                   Appliquer les filtres
                 </Button>
               </div>
@@ -403,11 +404,11 @@ const TransactionsPage = ({
 
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Transactions récentes</h2>
-        {isLoading ? (
+{isLoading ? (
           <div className="flex justify-center items-center h-48">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
           </div>
-        ) : transactions.length > 0 ? (
+        ) : sortedTransactions.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -421,8 +422,8 @@ const TransactionsPage = ({
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
-                  <tr key={transaction.id}>
+                {sortedTransactions.map((transaction) => (
+                  <tr key={transaction.id} className="hover:bg-gray-50">
                     <td className="px-4 py-2">{formatDate(transaction.date)}</td>
                     <td className="px-4 py-2">{transaction.libelle}</td>
                     <td className={`px-4 py-2 text-right ${transaction.montant < 0 ? 'text-red-600' : 'text-green-600'}`}>
