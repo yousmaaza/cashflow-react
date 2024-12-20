@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calculator, TrendingUp, ListTodo } from 'lucide-react';
 import KPICard from '@/components/dashboard/KPICard';
 import ExpensesByCategoryChart from '@/components/dashboard/ExpensesByCategoryChart';
 import ExpensesByPaymentTypeChart from '@/components/dashboard/ExpensesByPaymentTypeChart';
@@ -8,11 +8,9 @@ import { transactionService, Transaction } from '@/services/transactionService';
 import { Card } from '@/components/ui/card';
 
 interface DashboardStats {
-  totalBalance: number;
-  monthlyIncome: number;
-  monthlyExpenses: number;
-  incomeTrend: number;
-  expensesTrend: number;
+  averageMonthlyExpenses: number;
+  averageMonthlyIncome: number;
+  totalTransactionsCount: number;
 }
 
 const Index = () => {
@@ -25,12 +23,12 @@ const Index = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [transactions, stats] = await Promise.all([
+        const [transactions, dashboardStats] = await Promise.all([
           transactionService.getTransactions(),
-          transactionService.getCurrentMonthStats()
+          transactionService.getDashboardStats()
         ]);
         setTransactions(transactions);
-        setStats(stats);
+        setStats(dashboardStats);
       } catch (err) {
         setError('Erreur lors du chargement des données');
         console.error('Error fetching dashboard data:', err);
@@ -42,14 +40,6 @@ const Index = () => {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <Card className="p-6 bg-destructive/10 text-destructive">
@@ -59,8 +49,6 @@ const Index = () => {
     );
   }
 
-  if (!stats) return null;
-
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto py-8">
@@ -68,21 +56,23 @@ const Index = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <KPICard
-            title="Solde actuel"
-            value={`${stats.totalBalance.toFixed(2)} €`}
-            icon={<Wallet className="h-6 w-6" />}
+            title="Moyenne mensuelle des dépenses"
+            value={stats?.averageMonthlyExpenses}
+            icon={<Calculator className="h-6 w-6" />}
+            loading={loading}
           />
           <KPICard
-            title="Revenus du mois"
-            value={`${stats.monthlyIncome.toFixed(2)} €`}
+            title="Moyenne mensuelle des revenus"
+            value={stats?.averageMonthlyIncome}
             icon={<TrendingUp className="h-6 w-6" />}
-            trend={{ value: stats.incomeTrend, isPositive: stats.incomeTrend >= 0 }}
+            loading={loading}
           />
           <KPICard
-            title="Dépenses du mois"
-            value={`${stats.monthlyExpenses.toFixed(2)} €`}
-            icon={<TrendingDown className="h-6 w-6" />}
-            trend={{ value: Math.abs(stats.expensesTrend), isPositive: stats.expensesTrend <= 0 }}
+            title="Nombre total d'opérations"
+            value={stats?.totalTransactionsCount}
+            icon={<ListTodo className="h-6 w-6" />}
+            loading={loading}
+            valueFormatter={(value) => value?.toString() || '0'}
           />
         </div>
 
