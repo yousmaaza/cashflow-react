@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const menuItems = [
   {
@@ -57,7 +58,7 @@ export function AppSidebar() {
       onMouseLeave={() => handleMouseEvents(false)}
     >
       {/* Thin visible strip to trigger sidebar */}
-      <div className="absolute left-0 top-0 w-2 h-full bg-gray-200 hover:bg-accent/10 transition-colors" />
+      <div className="absolute left-0 top-0 w-2 h-full bg-gray-200 hover:bg-accent/10 transition-colors dark:bg-gray-800" />
       
       <Sidebar>
         <SidebarContent>
@@ -97,6 +98,13 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          {/* Theme Toggle */}
+          <div className="mt-auto p-4 border-t dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
+          </div>
         </SidebarContent>
       </Sidebar>
     </div>
