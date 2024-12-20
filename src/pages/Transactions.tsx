@@ -1,25 +1,12 @@
 import { useState } from "react";
-import { mockTransactions, Transaction } from "@/data/mockTransactions";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import PDFUploader from "@/components/transactions/PDFUploader";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { FilterPopover } from "@/components/transactions/FilterPopover";
-
-const defaultCategories = [
-  "Alimentation",
-  "Transport",
-  "Loisirs",
-  "Logement",
-  "Santé",
-  "Shopping",
-  "Autres",
-  "Tous"
-];
-
-const paymentTypes = ["CB", "Espèces", "Virement", "Prélèvement", "Tous"];
+import { useTransactions } from "@/hooks/use-transactions";
 
 const Transactions = () => {
-  const [transactions, setTransactions] = useState(mockTransactions);
+  const { transactions } = useTransactions();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -34,16 +21,6 @@ const Transactions = () => {
     setSelectedPaymentType("all");
     setMinAmount("");
     setMaxAmount("");
-  };
-
-  const handleUpdateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(transactions.map(t => 
-      t.id === updatedTransaction.id ? updatedTransaction : t
-    ));
-  };
-
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
   };
 
   const filteredTransactions = transactions.filter(transaction => {
@@ -92,13 +69,7 @@ const Transactions = () => {
         </div>
 
         <div className="mt-6">
-          <TransactionTable
-            transactions={filteredTransactions}
-            categories={defaultCategories}
-            paymentTypes={paymentTypes}
-            onUpdateTransaction={handleUpdateTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-          />
+          <TransactionTable />
         </div>
       </main>
     </div>
