@@ -1,47 +1,43 @@
-import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import React, { useState } from 'react';
+import { uploadPDF } from '../../services/api';
 
-const PDFUploader = () => {
-  const { toast } = useToast();
+const PDFUploader: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.type === "application/pdf") {
-        toast({
-          title: "PDF chargé avec succès",
-          description: `Le fichier ${file.name} a été chargé.`,
-        });
-        // Ici, vous pourriez ajouter la logique pour traiter le PDF
-      } else {
-        toast({
-          title: "Erreur de format",
-          description: "Veuillez sélectionner un fichier PDF.",
-          variant: "destructive",
-        });
-      }
+    if (!file) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await uploadPDF(file);
+      // Handle successful upload
+    } catch (err) {
+      setError('Error uploading file');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="mb-4">
+    <div className="w-full max-w-md mx-auto p-4">
       <input
         type="file"
         accept=".pdf"
-        onChange={handleFileChange}
-        className="hidden"
-        id="pdf-upload"
+        onChange={handleFileUpload}
+        className="block w-full text-sm text-gray-500
+          file:mr-4 file:py-2 file:px-4
+          file:rounded-full file:border-0
+          file:text-sm file:font-semibold
+          file:bg-violet-50 file:text-violet-700
+          hover:file:bg-violet-100"
       />
-      <label htmlFor="pdf-upload">
-        <Button 
-          variant="default" 
-          className="cursor-pointer bg-finance-primary hover:bg-finance-primary/90 text-white"
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          Importer un PDF
-        </Button>
-      </label>
+      {loading && <p className="mt-2 text-gray-600">Uploading...</p>}
+      {error && <p className="mt-2 text-red-500">{error}</p>}
     </div>
   );
 };
