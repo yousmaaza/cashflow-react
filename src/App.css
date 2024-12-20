@@ -1,134 +1,42 @@
-:root {
-  --background-light: #f4f4f7;
-  --background-dark: #121212;
-  --text-light: #333;
-  --text-dark: #e0e0e0;
-  --card-light: #ffffff;
-  --card-dark: #1e1e1e;
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }
 
-.dark {
-  background-color: var(--background-dark);
-  color: var(--text-dark);
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-.light {
-  background-color: var(--background-light);
-  color: var(--text-light);
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.App {
-  min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
-/* Amélioration générale */
-body {
-  font-family: 'Inter', sans-serif;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+.card {
+  padding: 2em;
 }
 
-/* Dark mode spécifique pour divers éléments */
-.dark .bg-white {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-}
-
-.dark .text-gray-900 {
-  color: var(--text-dark);
-}
-
-.dark .border {
-  border-color: #333;
-}
-
-.dark .bg-gray-50 {
-  background-color: var(--background-dark);
-}
-
-/* Effets de transition */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-:root {
-  --background-light: #f4f4f7;
-  --background-dark: #121212;
-  --text-light: #333;
-  --text-dark: #e0e0e0;
-  --card-light: #ffffff;
-  --card-dark: #1e1e1e;
-  --accent-color: #ffd700; /* Jaune */
-}
-
-.dark {
-  background-color: var(--background-dark);
-  color: var(--text-dark);
-}
-
-.light {
-  background-color: var(--background-light);
-  color: var(--text-light);
-}
-
-.App {
-  min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.dark .bg-white {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-}
-
-.dark .text-gray-900 {
-  color: var(--text-dark);
-}
-
-.dark .border {
-  border-color: #333;
-}
-
-.dark .bg-gray-50 {
-  background-color: var(--background-dark);
-}
-
-.dark .text-accent {
-  color: var(--accent-color);
-}
-
-* {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-/* Ajoutez ces styles à la fin de votre fichier App.css */
-
-.dark .chart-filter {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-  border-color: #333;
-}
-
-.dark .chart-filter select {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-  border-color: #333;
-}
-
-.dark .chart-filter input {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-  border-color: #333;
-}
-.dark .chart-filter select {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-  border-color: #333;
-}
-
-.dark .chart-filter button {
-  background-color: var(--card-dark);
-  color: var(--text-dark);
-  border-color: #333;
+.read-the-docs {
+  color: #888;
 }
