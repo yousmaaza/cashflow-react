@@ -10,6 +10,19 @@ const api = axios.create({
   },
 });
 
+// Fonctions de transformation pour la compatibilité avec le backend
+const transformToBackend = (transaction: Transaction) => ({
+  ...transaction,
+  description: transaction.libelle,
+  amount: transaction.montant,
+});
+
+const transformFromBackend = (transaction: any): Transaction => ({
+  ...transaction,
+  libelle: transaction.description,
+  montant: transaction.amount,
+});
+
 export const uploadPDF = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -24,12 +37,13 @@ export const uploadPDF = async (file: File) => {
 
 export const getTransactions = async (): Promise<Transaction[]> => {
   const response = await api.get('/transactions');
-  return response.data;
+  return response.data.map(transformFromBackend);
 };
 
 export const updateTransaction = async (id: string, transaction: Transaction) => {
-  const response = await api.put(`/transactions/${id}`, transaction);
-  return response.data;
+  const backendTransaction = transformToBackend(transaction);
+  const response = await api.put(`/transactions/${id}`, backendTransaction);
+  return transformFromBackend(response.data);
 };
 
 export const deleteTransaction = async (id: string) => {
