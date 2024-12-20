@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { Transaction } from '@/data/mockTransactions';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/';
+const API_BASE_URL = 'http://localhost:8000';
 
-export const api = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -13,35 +14,27 @@ export const uploadPDF = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);
   
-  try {
-    const response = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error uploading PDF:', error);
-    throw error;
-  }
+  const response = await api.post('/upload-pdf', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
 };
 
-export const getTransactions = async () => {
-  try {
-    const response = await api.get('/transactions');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    throw error;
-  }
+export const getTransactions = async (): Promise<Transaction[]> => {
+  const response = await api.get('/transactions');
+  return response.data;
 };
 
-export const updateTransaction = async (id: number, updates: any) => {
-  try {
-    const response = await api.put(`/transactions/${id}`, updates);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating transaction:', error);
-    throw error;
-  }
+export const updateTransaction = async (id: string, transaction: Transaction) => {
+  const response = await api.put(`/transactions/${id}`, transaction);
+  return response.data;
 };
+
+export const deleteTransaction = async (id: string) => {
+  const response = await api.delete(`/transactions/${id}`);
+  return response.data;
+};
+
+export default api;
