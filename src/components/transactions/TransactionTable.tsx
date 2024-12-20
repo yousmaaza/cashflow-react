@@ -96,9 +96,9 @@ const TransactionTable = () => {
               <TableCell>{new Date(transaction.date).toLocaleDateString('fr-FR')}</TableCell>
               <TableCell>{transaction.libelle}</TableCell>
               <TableCell className={transaction.montant < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                {transaction.montant.toFixed(2)} €
+                {transaction.montant !== undefined ? transaction.montant.toFixed(2) : 'N/A'} €
               </TableCell>
-              <TableCell>{transaction.category}</TableCell>
+              <TableCell>{transaction.categorie}</TableCell>
               <TableCell>{transaction.type}</TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -112,7 +112,7 @@ const TransactionTable = () => {
                       <Edit2 className="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-red-600 dark:text-red-400"
                       onClick={() => handleDelete(transaction.id)}
                     >
@@ -173,11 +173,11 @@ const TransactionTable = () => {
                 <label className="text-sm font-medium">Catégorie</label>
                 <select
                   className="w-full p-2 border rounded-md dark:bg-gray-800"
-                  value={editingTransaction.category}
+                  value={editingTransaction.categorie}
                   onChange={(e) =>
                     setEditingTransaction({
                       ...editingTransaction,
-                      category: e.target.value as Transaction['category'],
+                      categorie: e.target.value as Transaction['categorie'],
                     })}
                 >
                   {categories.filter(cat => cat !== "Tous").map((category) => (

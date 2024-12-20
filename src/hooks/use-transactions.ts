@@ -16,7 +16,7 @@ export const useTransactions = () => {
       setTransactions(data);
       
       // Extract unique categories and payment types
-      const uniqueCategories = [...new Set(data.map((t: Transaction) => t.category))];
+      const uniqueCategories = [...new Set(data.map((t: Transaction) => t.categorie))];
       const uniquePaymentTypes = [...new Set(data.map((t: Transaction) => t.type))];
       
       setCategories(['Tous', ...uniqueCategories]);

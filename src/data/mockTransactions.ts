@@ -3,7 +3,7 @@ export interface Transaction {
   date: string;
   libelle: string;  // Changé de description
   montant: number;  // Changé de amount
-  category: string;
+  categorie: string;
   type: string;
 }
 
