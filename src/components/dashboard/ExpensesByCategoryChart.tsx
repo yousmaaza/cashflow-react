@@ -42,10 +42,10 @@ export default function ExpensesByCategoryChart({ transactions }: ExpensesByCate
     const prepareChartData = async () => {
       try {
         setLoading(true);
-        const expenses = transactions.filter(t => t.amount < 0);
+        const expenses = transactions.filter(t => t.montant < 0);
         const categoryTotals = expenses.reduce((acc, t) => {
-          const category = t.category || 'Non catégorisé';
-          acc[category] = (acc[category] || 0) + Math.abs(t.amount);
+          const categorie = t.categorie || 'Non catégorisé';
+          acc[categorie] = (acc[categorie] || 0) + Math.abs(t.montant);
           return acc;
         }, {} as Record<string, number>);
 

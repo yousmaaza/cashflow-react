@@ -2,12 +2,11 @@ import axios from 'axios';
 
 export interface Transaction {
   id: number;
-  amount: number;
+  montant: number;
   date: string;
-  description: string;
-  category: string;
+  libelle: string;
+  categorie: string;
   type: string;
-  paymentMethod: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -29,14 +28,14 @@ export const transactionService = {
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     });
 
-    const totalBalance = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const totalBalance = transactions.reduce((sum, t) => sum + t.montant, 0);
     const monthlyIncome = monthTransactions
-      .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.montant > 0)
+      .reduce((sum, t) => sum + t.montant, 0);
     const monthlyExpenses = Math.abs(
       monthTransactions
-        .filter(t => t.amount < 0)
-        .reduce((sum, t) => sum + t.amount, 0)
+        .filter(t => t.montant < 0)
+        .reduce((sum, t) => sum + t.montant, 0)
     );
 
     // Calculate trends comparing to last month
@@ -50,11 +49,11 @@ export const transactionService = {
 
     const lastMonthIncome = lastMonthTransactions
       .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.montant, 0);
     const lastMonthExpenses = Math.abs(
       lastMonthTransactions
-        .filter(t => t.amount < 0)
-        .reduce((sum, t) => sum + t.amount, 0)
+        .filter(t => t.montant < 0)
+        .reduce((sum, t) => sum + t.montant, 0)
     );
 
     const incomeTrend = lastMonthIncome ? 
@@ -76,32 +75,32 @@ export const transactionService = {
     const expenses = transactions.filter(t => t.amount < 0);
     
     return expenses.reduce((acc, t) => {
-      const category = t.category;
-      if (!acc[category]) {
-        acc[category] = 0;
+      const categorie = t.categorie;
+      if (!acc[categorie]) {
+        acc[categorie] = 0;
       }
-      acc[category] += Math.abs(t.amount);
+      acc[categorie] += Math.abs(t.montant);
       return acc;
     }, {} as Record<string, number>);
   },
 
   async getExpensesByPaymentType() {
     const transactions = await this.getTransactions();
-    const expenses = transactions.filter(t => t.amount < 0);
+    const expenses = transactions.filter(t => t.montant < 0);
     
     return expenses.reduce((acc, t) => {
-      const paymentType = t.paymentMethod;
-      if (!acc[paymentType]) {
-        acc[paymentType] = 0;
+      const type = t.type;
+      if (!acc[type]) {
+        acc[type] = 0;
       }
-      acc[paymentType] += Math.abs(t.amount);
+      acc[type] += Math.abs(t.montant);
       return acc;
     }, {} as Record<string, number>);
   },
 
   async getExpensesOverTime() {
     const transactions = await this.getTransactions();
-    const expenses = transactions.filter(t => t.amount < 0);
+    const expenses = transactions.filter(t => t.montant < 0);
     
     return expenses.reduce((acc, t) => {
       const date = new Date(t.date);
@@ -110,7 +109,7 @@ export const transactionService = {
       if (!acc[monthYear]) {
         acc[monthYear] = 0;
       }
-      acc[monthYear] += Math.abs(t.amount);
+      acc[monthYear] += Math.abs(t.montant);
       return acc;
     }, {} as Record<string, number>);
   }
