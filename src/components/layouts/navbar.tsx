@@ -1,29 +1,41 @@
 import { Link } from 'react-router-dom'
-import { Button } from '../ui/button'
-import { ThemeToggle } from '../theme-toggle'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { Button } from '@/components/ui/button'
+import { UserButton } from '@/components/user/user-button'
+
+const navigation = [
+  { name: 'Tableau de bord', href: '/' },
+  { name: 'Transactions', href: '/transactions' },
+  { name: 'Analyses', href: '/analytics' },
+  { name: 'Budget', href: '/budget' },
+]
 
 export function Navbar() {
   return (
-    <header className="border-b bg-background sticky top-0 z-50">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="text-xl font-bold">
-            Cashflow
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container h-14 max-w-[1400px] flex items-center">
+        <div className="mr-4 flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <span className="font-bold">Cashflow</span>
           </Link>
-          <nav className="flex gap-4">
-            <Button variant="ghost" asChild>
-              <Link to="/">Tableau de bord</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/transactions">Transactions</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/analytics">Analyses</Link>
-            </Button>
+          <nav className="flex items-center space-x-6 text-sm font-medium">
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
+
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <nav className="flex items-center space-x-2">
+            <ThemeToggle />
+            <UserButton />
+          </nav>
         </div>
       </div>
     </header>
