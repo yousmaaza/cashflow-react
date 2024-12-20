@@ -20,27 +20,30 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useTransactionFilters } from "@/hooks/use-transaction-filters";
 
 const TransactionTable = () => {
-  const { transactions, categories, paymentTypes, loading, error, updateTransaction, deleteTransaction } = useTransactions();
+  const { transactions, updateTransaction, deleteTransaction } = useTransactions();
+  const { filters } = useTransactionFilters();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-500 p-4 text-center">
-        {error}
-      </div>
-    );
-  }
+  // Filtrer les transactions
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesCategorie = filters.categorie === "Tous" || transaction.categorie === filters.categorie;
+    const matchesType = filters.type === "Tous" || transaction.type === filters.type;
+    const matchesMinMontant = !filters.montantMin || transaction.montant >= parseFloat(filters.montantMin);
+    const matchesMaxMontant = !filters.montantMax || transaction.montant <= parseFloat(filters.montantMax);
+    
+    let matchesDateRange = true;
+    if (filters.date) {
+      const transactionDate = new Date(transaction.date);
+      const filterDate = new Date(filters.date);
+      matchesDateRange = transactionDate.toDateString() === filterDate.toDateString();
+    }
+    
+    return matchesCategorie && matchesType && matchesMinMontant && matchesMaxMontant && matchesDateRange;
+  });
 
   const handleSaveEdit = async () => {
     if (editingTransaction) {
@@ -54,7 +57,7 @@ const TransactionTable = () => {
       } else {
         toast({
           title: "Erreur",
-          description: "Une erreur est survenue lors de la mise à jour de la transaction.",
+          description: "Une erreur est survenue lors de la mise à jour.",
           variant: "destructive",
         });
       }
@@ -71,7 +74,7 @@ const TransactionTable = () => {
     } else {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la suppression de la transaction.",
+        description: "Une erreur est survenue lors de la suppression.",
         variant: "destructive",
       });
     }
@@ -91,12 +94,12 @@ const TransactionTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((transaction) => (
+          {filteredTransactions.map((transaction) => (
             <TableRow key={transaction.id}>
               <TableCell>{new Date(transaction.date).toLocaleDateString('fr-FR')}</TableCell>
               <TableCell>{transaction.libelle}</TableCell>
               <TableCell className={transaction.montant < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                {transaction.montant !== undefined ? transaction.montant.toFixed(2) : 'N/A'} €
+                {transaction.montant.toFixed(2)} €
               </TableCell>
               <TableCell>{transaction.categorie}</TableCell>
               <TableCell>{transaction.type}</TableCell>
@@ -112,7 +115,7 @@ const TransactionTable = () => {
                       <Edit2 className="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>
-                    <DropdownMenuItem
+                    <DropdownMenuItem 
                       className="text-red-600 dark:text-red-400"
                       onClick={() => handleDelete(transaction.id)}
                     >
@@ -161,6 +164,7 @@ const TransactionTable = () => {
                 <label className="text-sm font-medium">Montant</label>
                 <Input
                   type="number"
+                  step="0.01"
                   value={editingTransaction.montant}
                   onChange={(e) =>
                     setEditingTransaction({
@@ -177,10 +181,10 @@ const TransactionTable = () => {
                   onChange={(e) =>
                     setEditingTransaction({
                       ...editingTransaction,
-                      categorie: e.target.value as Transaction['categorie'],
+                      categorie: e.target.value,
                     })}
                 >
-                  {categories.filter(cat => cat !== "Tous").map((category) => (
+                  {['Alimentation', 'Transport', 'Loisirs', 'Logement', 'Santé', 'Shopping', 'Autres'].map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -195,10 +199,10 @@ const TransactionTable = () => {
                   onChange={(e) =>
                     setEditingTransaction({
                       ...editingTransaction,
-                      type: e.target.value as Transaction['type'],
+                      type: e.target.value,
                     })}
                 >
-                  {paymentTypes.filter(type => type !== "Tous").map((type) => (
+                  {['CB', 'Espèces', 'Virement', 'Prélèvement'].map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
