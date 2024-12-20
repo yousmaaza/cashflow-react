@@ -1,67 +1,28 @@
-import { useState } from "react";
-import { mockTransactions, Transaction } from "@/data/mockTransactions";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import PDFUploader from "@/components/transactions/PDFUploader";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { FilterPopover } from "@/components/transactions/FilterPopover";
-
-const defaultCategories = [
-  "Alimentation",
-  "Transport",
-  "Loisirs",
-  "Logement",
-  "Santé",
-  "Shopping",
-  "Autres",
-  "Tous"
-];
-
-const paymentTypes = ["CB", "Espèces", "Virement", "Prélèvement", "Tous"];
+import { useTransactions } from "@/hooks/use-transactions";
+import { useTransactionFilters } from "@/hooks/use-transaction-filters";
 
 const Transactions = () => {
-  const [transactions, setTransactions] = useState(mockTransactions);
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedPaymentType, setSelectedPaymentType] = useState("all");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
-
-  const handleResetFilters = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setSelectedCategory("all");
-    setSelectedPaymentType("all");
-    setMinAmount("");
-    setMaxAmount("");
-  };
-
-  const handleUpdateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(transactions.map(t => 
-      t.id === updatedTransaction.id ? updatedTransaction : t
-    ));
-  };
-
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
+  const { transactions } = useTransactions();
+  const { filters, resetFilters } = useTransactionFilters();
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesCategory = selectedCategory === "all" || transaction.category === selectedCategory;
-    const matchesType = selectedPaymentType === "all" || transaction.type === selectedPaymentType;
-    const matchesMinAmount = !minAmount || transaction.amount >= parseFloat(minAmount);
-    const matchesMaxAmount = !maxAmount || transaction.amount <= parseFloat(maxAmount);
+    const matchesCategorie = filters.categorie === "Tous" || transaction.categorie === filters.categorie;
+    const matchesType = filters.type === "Tous" || transaction.type === filters.type;
+    const matchesMinMontant = !filters.montantMin || transaction.montant >= parseFloat(filters.montantMin);
+    const matchesMaxMontant = !filters.montantMax || transaction.montant <= parseFloat(filters.montantMax);
     
     let matchesDateRange = true;
-    if (startDate && endDate) {
+    if (filters.date) {
       const transactionDate = new Date(transaction.date);
-      matchesDateRange = isWithinInterval(transactionDate, {
-        start: startOfDay(startDate),
-        end: endOfDay(endDate)
-      });
+      const filterDate = new Date(filters.date);
+      matchesDateRange = transactionDate.toDateString() === filterDate.toDateString();
     }
     
-    return matchesCategory && matchesType && matchesMinAmount && matchesMaxAmount && matchesDateRange;
+    return matchesCategorie && matchesType && matchesMinMontant && matchesMaxMontant && matchesDateRange;
   });
 
   return (
@@ -73,32 +34,12 @@ const Transactions = () => {
           </h1>
           <div className="flex gap-2">
             <PDFUploader />
-            <FilterPopover
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={endDate}
-              setEndDate={setEndDate}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              selectedPaymentType={selectedPaymentType}
-              setSelectedPaymentType={setSelectedPaymentType}
-              minAmount={minAmount}
-              setMinAmount={setMinAmount}
-              maxAmount={maxAmount}
-              setMaxAmount={setMaxAmount}
-              onResetFilters={handleResetFilters}
-            />
+            <FilterPopover onResetFilters={resetFilters} />
           </div>
         </div>
 
         <div className="mt-6">
-          <TransactionTable
-            transactions={filteredTransactions}
-            categories={defaultCategories}
-            paymentTypes={paymentTypes}
-            onUpdateTransaction={handleUpdateTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-          />
+          <TransactionTable />
         </div>
       </main>
     </div>

@@ -1,45 +1,60 @@
-import { Upload } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Upload } from "lucide-react";
+import { useTransactions } from "@/hooks/use-transactions";
 
 const PDFUploader = () => {
+  const [uploading, setUploading] = useState(false);
+  const { uploadPDF } = useTransactions();
   const { toast } = useToast();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.type === "application/pdf") {
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const success = await uploadPDF(file);
+      if (success) {
         toast({
-          title: "PDF chargé avec succès",
-          description: `Le fichier ${file.name} a été chargé.`,
+          title: "PDF importé avec succès",
+          description: "Les transactions ont été mises à jour.",
         });
-        // Ici, vous pourriez ajouter la logique pour traiter le PDF
       } else {
-        toast({
-          title: "Erreur de format",
-          description: "Veuillez sélectionner un fichier PDF.",
-          variant: "destructive",
-        });
+        throw new Error("Échec de l'upload");
       }
+    } catch (error) {
+      toast({
+        title: "Erreur lors de l'import",
+        description: "Une erreur est survenue lors de l'import du PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div className="mb-4">
+    <div>
       <input
         type="file"
+        id="pdf-upload"
         accept=".pdf"
         onChange={handleFileChange}
         className="hidden"
-        id="pdf-upload"
       />
       <label htmlFor="pdf-upload">
-        <Button 
-          variant="default" 
-          className="cursor-pointer bg-finance-primary hover:bg-finance-primary/90 text-white"
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          disabled={uploading}
+          asChild
         >
-          <Upload className="mr-2 h-4 w-4" />
-          Importer un PDF
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            {uploading ? "Import en cours..." : "Importer PDF"}
+          </div>
         </Button>
       </label>
     </div>

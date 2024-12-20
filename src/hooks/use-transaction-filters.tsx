@@ -2,36 +2,46 @@ import { create } from 'zustand';
 
 type TransactionFilters = {
   date: Date | undefined;
-  category: string;
+  categorie: string;
   type: string;
-  minAmount: string;
-  maxAmount: string;
+  montantMin: string;
+  montantMax: string;
 };
 
 type TransactionFiltersStore = {
   filters: TransactionFilters;
   setDate: (date: Date | undefined) => void;
-  setCategory: (category: string) => void;
+  setCategorie: (categorie: string) => void;
   setType: (type: string) => void;
-  setMinAmount: (amount: string) => void;
-  setMaxAmount: (amount: string) => void;
+  setMontantMin: (montant: string) => void;
+  setMontantMax: (montant: string) => void;
   resetFilters: () => void;
 };
 
 const initialFilters: TransactionFilters = {
   date: undefined,
-  category: "Tous",
+  categorie: "Tous",
   type: "Tous",
-  minAmount: "",
-  maxAmount: "",
+  montantMin: "",
+  montantMax: "",
 };
 
 export const useTransactionFilters = create<TransactionFiltersStore>((set) => ({
   filters: initialFilters,
-  setDate: (date) => set((state) => ({ filters: { ...state.filters, date } })),
-  setCategory: (category) => set((state) => ({ filters: { ...state.filters, category } })),
-  setType: (type) => set((state) => ({ filters: { ...state.filters, type } })),
-  setMinAmount: (minAmount) => set((state) => ({ filters: { ...state.filters, minAmount } })),
-  setMaxAmount: (maxAmount) => set((state) => ({ filters: { ...state.filters, maxAmount } })),
+  setDate: (date) => set((state) => ({ 
+    filters: { ...state.filters, date } 
+  })),
+  setCategorie: (categorie) => set((state) => ({ 
+    filters: { ...state.filters, categorie } 
+  })),
+  setType: (type) => set((state) => ({ 
+    filters: { ...state.filters, type } 
+  })),
+  setMontantMin: (montantMin) => set((state) => ({ 
+    filters: { ...state.filters, montantMin } 
+  })),
+  setMontantMax: (montantMax) => set((state) => ({ 
+    filters: { ...state.filters, montantMax } 
+  })),
   resetFilters: () => set({ filters: initialFilters }),
 }));
