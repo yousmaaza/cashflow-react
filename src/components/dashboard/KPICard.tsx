@@ -10,15 +10,22 @@ interface KPICardProps {
     value: number;
     isPositive: boolean;
   } | null;
+  valueFormatter?: (value: number | null) => string;
 }
 
-const formatValue = (value: string | number | null): string => {
+const defaultFormatter = (value: number | null): string => {
   if (value === null || value === undefined) return '0,00 €';
-  if (typeof value === 'number') return value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-  return value;
+  return value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 };
 
-const KPICard = ({ title, value, icon, trend, loading = false }: KPICardProps) => {
+const KPICard = ({ 
+  title, 
+  value, 
+  icon, 
+  trend, 
+  loading = false,
+  valueFormatter = defaultFormatter 
+}: KPICardProps) => {
   if (loading) {
     return (
       <Card className="p-6">
@@ -32,7 +39,7 @@ const KPICard = ({ title, value, icon, trend, loading = false }: KPICardProps) =
     );
   }
 
-  const formattedValue = formatValue(value);
+  const formattedValue = typeof value === 'number' ? valueFormatter(value) : valueFormatter(null);
 
   return (
     <Card className="p-6 transition-all hover:shadow-lg">
