@@ -96,7 +96,7 @@ const TransactionTable = () => {
               <TableCell>{new Date(transaction.date).toLocaleDateString('fr-FR')}</TableCell>
               <TableCell>{transaction.description}</TableCell>
               <TableCell className={transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                {transaction.amount.toFixed(2)} €
+                {transaction.amount !== undefined ? transaction.amount.toFixed(2) : 'N/A'} €
               </TableCell>
               <TableCell>{transaction.category}</TableCell>
               <TableCell>{transaction.type}</TableCell>
@@ -112,7 +112,7 @@ const TransactionTable = () => {
                       <Edit2 className="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-red-600 dark:text-red-400"
                       onClick={() => handleDelete(transaction.id)}
                     >
