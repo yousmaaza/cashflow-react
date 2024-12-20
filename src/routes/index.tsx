@@ -1,8 +1,9 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { MainLayout } from '@/components/layouts/main-layout'
-import { DashboardPage } from '@/features/analytics/pages/dashboard'
-import { TransactionsPage } from '@/features/transactions/pages/transactions'
-import { SettingsPage } from '@/features/settings/pages/settings'
+import { MainLayout } from '../components/layouts/main-layout'
+
+const DashboardPage = () => import('../features/dashboard/pages/dashboard')
+const TransactionsPage = () => import('../features/transactions/pages/transactions')
+const AnalyticsPage = () => import('../features/analytics/pages/analytics')
 
 export const router = createBrowserRouter([
   {
@@ -18,8 +19,8 @@ export const router = createBrowserRouter([
         element: <TransactionsPage />,
       },
       {
-        path: 'settings',
-        element: <SettingsPage />,
+        path: 'analytics',
+        element: <AnalyticsPage />,
       },
     ],
   },
