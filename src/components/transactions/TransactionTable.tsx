@@ -94,9 +94,9 @@ const TransactionTable = () => {
           {transactions.map((transaction) => (
             <TableRow key={transaction.id}>
               <TableCell>{new Date(transaction.date).toLocaleDateString('fr-FR')}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
-              <TableCell className={transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                {transaction.amount.toFixed(2)} €
+              <TableCell>{transaction.libelle}</TableCell>
+              <TableCell className={transaction.montant < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
+                {transaction.montant.toFixed(2)} €
               </TableCell>
               <TableCell>{transaction.category}</TableCell>
               <TableCell>{transaction.type}</TableCell>
@@ -149,11 +149,11 @@ const TransactionTable = () => {
               <div>
                 <label className="text-sm font-medium">Libellé</label>
                 <Input
-                  value={editingTransaction.description}
+                  value={editingTransaction.libelle}
                   onChange={(e) =>
                     setEditingTransaction({
                       ...editingTransaction,
-                      description: e.target.value,
+                      libelle: e.target.value,
                     })}
                 />
               </div>
@@ -161,11 +161,11 @@ const TransactionTable = () => {
                 <label className="text-sm font-medium">Montant</label>
                 <Input
                   type="number"
-                  value={editingTransaction.amount}
+                  value={editingTransaction.montant}
                   onChange={(e) =>
                     setEditingTransaction({
                       ...editingTransaction,
-                      amount: parseFloat(e.target.value),
+                      montant: parseFloat(e.target.value),
                     })}
                 />
               </div>
