@@ -10,35 +10,14 @@ const api = axios.create({
   },
 });
 
-// Fonction pour transformer les données du backend vers le frontend
-const transformBackendToFrontend = (backendTransaction: any): Transaction => ({
-  id: backendTransaction.id,
-  date: backendTransaction.date,
-  libelle: backendTransaction.description,
-  montant: backendTransaction.amount,
-  categorie: backendTransaction.category,
-  type: backendTransaction.type,
-});
-
-// Fonction pour transformer les données du frontend vers le backend
-const transformFrontendToBackend = (transaction: Transaction) => ({
-  id: transaction.id,
-  date: transaction.date,
-  description: transaction.libelle,
-  amount: transaction.montant,
-  category: transaction.categorie,
-  type: transaction.type,
-});
-
 export const getTransactions = async (): Promise<Transaction[]> => {
   const response = await api.get('/transactions');
-  return response.data.map(transformBackendToFrontend);
+  return response.data;
 };
 
 export const updateTransaction = async (id: string, transaction: Transaction) => {
-  const backendData = transformFrontendToBackend(transaction);
-  const response = await api.put(`/transactions/${id}`, backendData);
-  return transformBackendToFrontend(response.data);
+  const response = await api.put(`/transactions/${id}`, transaction);
+  return response.data;
 };
 
 export const deleteTransaction = async (id: string) => {
@@ -53,5 +32,7 @@ export const uploadPDF = async (file: File) => {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response.data.map(transformBackendToFrontend);
+  return response.data;
 };
+
+export default api;
