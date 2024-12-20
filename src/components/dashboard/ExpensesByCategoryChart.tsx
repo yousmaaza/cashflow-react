@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { transactionService, Transaction } from '@/services/transactionService';
+import api from '@/services/api';
 
-interface ExpensesByCategoryChartProps {
-  transactions: Transaction[];
+interface ChartData {
+  name: string;
+  value: number;
 }
 
 const COLORS = [
@@ -26,7 +27,10 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="bg-background border p-2 rounded-lg shadow-lg">
         <p className="font-medium">{payload[0].name}</p>
         <p className="text-sm text-muted-foreground">
-          {`${payload[0].value.toFixed(2)} €`}
+          {new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(payload[0].value)}
         </p>
       </div>
     );
@@ -34,35 +38,57 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export default function ExpensesByCategoryChart({ transactions }: ExpensesByCategoryChartProps) {
-  const [chartData, setChartData] = useState<{ name: string; value: number }[]>([]);
+const CustomLegend = ({ payload }: any) => {
+  if (!payload) return null;
+  
+  return (
+    <ul className="flex flex-col gap-2">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center gap-2 text-sm">
+          <div 
+            className="w-3 h-3 rounded-full" 
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-foreground">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const formatValue = (value: number): string => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
+export default function ExpensesByCategoryChart() {
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const prepareChartData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const expenses = transactions.filter(t => t.montant < 0);
-        const categoryTotals = expenses.reduce((acc, t) => {
-          const categorie = t.categorie || 'Non catégorisé';
-          acc[categorie] = (acc[categorie] || 0) + Math.abs(t.montant);
-          return acc;
-        }, {} as Record<string, number>);
-
-        const data = Object.entries(categoryTotals)
+        const categoryData = await api.getExpensesByCategory();
+        const data = Object.entries(categoryData)
           .map(([name, value]) => ({ name, value }))
-          .sort((a, b) => b.value - a.value);
-
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10); // Limiter aux 10 premières catégories
         setChartData(data);
       } catch (error) {
-        console.error('Error preparing category chart data:', error);
+        console.error('Error fetching category data:', error);
+        setError('Erreur lors du chargement des données par catégorie');
       } finally {
         setLoading(false);
       }
     };
 
-    prepareChartData();
-  }, [transactions]);
+    fetchData();
+  }, []);
 
   if (loading) {
     return (
@@ -73,6 +99,21 @@ export default function ExpensesByCategoryChart({ transactions }: ExpensesByCate
         <CardContent>
           <div className="flex items-center justify-center h-[300px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Dépenses par catégorie</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px] text-destructive">
+            {error}
           </div>
         </CardContent>
       </Card>
@@ -109,7 +150,6 @@ export default function ExpensesByCategoryChart({ transactions }: ExpensesByCate
                 cy="50%"
                 innerRadius={60}
                 outerRadius={80}
-                fill="#8884d8"
                 paddingAngle={2}
                 dataKey="value"
               >
@@ -123,9 +163,7 @@ export default function ExpensesByCategoryChart({ transactions }: ExpensesByCate
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend 
-                formatter={(value) => 
-                  <span className="text-sm">{value}</span>
-                }
+                content={<CustomLegend />}
                 layout="vertical"
                 align="right"
                 verticalAlign="middle"
