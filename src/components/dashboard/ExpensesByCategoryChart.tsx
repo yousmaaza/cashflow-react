@@ -1,66 +1,139 @@
-import { Card } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
-import { Transaction } from "@/data/mockTransactions";
-import { useTheme } from "@/hooks/use-theme";
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { transactionService, Transaction } from '@/services/transactionService';
 
 interface ExpensesByCategoryChartProps {
   transactions: Transaction[];
 }
 
-const ExpensesByCategoryChart = ({ transactions }: ExpensesByCategoryChartProps) => {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+const COLORS = [
+  '#2563eb', // blue-600
+  '#7c3aed', // violet-600
+  '#db2777', // pink-600
+  '#ea580c', // orange-600
+  '#16a34a', // green-600
+  '#8b5cf6', // violet-500
+  '#84cc16', // lime-500
+  '#06b6d4', // cyan-500
+  '#f59e0b', // amber-500
+  '#ec4899', // pink-500
+];
 
-  const expensesByCategory = transactions
-    .filter(t => t.amount < 0)
-    .reduce((acc, transaction) => {
-      const amount = Math.abs(transaction.amount);
-      acc[transaction.category] = (acc[transaction.category] || 0) + amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-  const data = Object.entries(expensesByCategory).map(([category, value]) => ({
-    name: category,
-    value: Number(value.toFixed(2))
-  }));
-
-  return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Dépenses par catégorie</h3>
-      <div className="h-[300px]">
-        <ChartContainer config={{}} className="w-full h-full">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Legend 
-              formatter={(value) => <span style={{ color: isDark ? "#9ca3af" : "#64748b" }}>{value}</span>}
-            />
-            <ChartTooltip 
-              contentStyle={{
-                backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
-                color: isDark ? "#ffffff" : "#000000"
-              }}
-            />
-          </PieChart>
-        </ChartContainer>
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border p-2 rounded-lg shadow-lg">
+        <p className="font-medium">{payload[0].name}</p>
+        <p className="text-sm text-muted-foreground">
+          {`${payload[0].value.toFixed(2)} €`}
+        </p>
       </div>
-    </Card>
-  );
+    );
+  }
+  return null;
 };
 
-export default ExpensesByCategoryChart;
+export default function ExpensesByCategoryChart({ transactions }: ExpensesByCategoryChartProps) {
+  const [chartData, setChartData] = useState<{ name: string; value: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const prepareChartData = async () => {
+      try {
+        setLoading(true);
+        const expenses = transactions.filter(t => t.amount < 0);
+        const categoryTotals = expenses.reduce((acc, t) => {
+          const category = t.category || 'Non catégorisé';
+          acc[category] = (acc[category] || 0) + Math.abs(t.amount);
+          return acc;
+        }, {} as Record<string, number>);
+
+        const data = Object.entries(categoryTotals)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+
+        setChartData(data);
+      } catch (error) {
+        console.error('Error preparing category chart data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    prepareChartData();
+  }, [transactions]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Dépenses par catégorie</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Dépenses par catégorie</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px]">
+            <p className="text-muted-foreground">Aucune dépense à afficher</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Dépenses par catégorie</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                fill="#8884d8"
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((_, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={COLORS[index % COLORS.length]}
+                    className="stroke-background hover:opacity-80 transition-opacity"
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                formatter={(value) => 
+                  <span className="text-sm">{value}</span>
+                }
+                layout="vertical"
+                align="right"
+                verticalAlign="middle"
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
