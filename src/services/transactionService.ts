@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 
 export interface Transaction {
   id: number;
@@ -10,28 +10,44 @@ export interface Transaction {
   paymentMethod: string;
 }
 
+interface MonthlyData {
+  expenses: number;
+  income: number;
+  count: number;
+}
+
 interface DashboardStats {
   averageMonthlyExpenses: number;
   averageMonthlyIncome: number;
   totalTransactionsCount: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export const transactionService = {
   async getTransactions(): Promise<Transaction[]> {
-    const response = await axios.get(`${API_URL}/transactions`);
-    return response.data;
+    return api.get('/transactions');
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
     const transactions = await this.getTransactions();
-    
+    const monthlyData = this.groupTransactionsByMonth(transactions);
+
     // Calcul du nombre total de transactions
     const totalTransactionsCount = transactions.length;
 
-    // Regrouper les transactions par mois
-    const monthlyTransactions = transactions.reduce((acc, t) => {
+    // Calcul des moyennes mensuelles
+    const monthCount = Object.keys(monthlyData).length || 1; // Éviter la division par zéro
+    const totalExpenses = Object.values(monthlyData).reduce((sum, month) => sum + month.expenses, 0);
+    const totalIncome = Object.values(monthlyData).reduce((sum, month) => sum + month.income, 0);
+
+    return {
+      averageMonthlyExpenses: totalExpenses / monthCount,
+      averageMonthlyIncome: totalIncome / monthCount,
+      totalTransactionsCount
+    };
+  },
+
+  private groupTransactionsByMonth(transactions: Transaction[]): Record<string, MonthlyData> {
+    return transactions.reduce((acc, t) => {
       const date = new Date(t.date);
       const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
       
@@ -51,62 +67,39 @@ export const transactionService = {
       acc[monthKey].count += 1;
 
       return acc;
-    }, {} as Record<string, { expenses: number; income: number; count: number }>);
-
-    // Calcul des moyennes mensuelles
-    const monthCount = Object.keys(monthlyTransactions).length || 1; // Éviter la division par zéro
-    const totalExpenses = Object.values(monthlyTransactions).reduce((sum, month) => sum + month.expenses, 0);
-    const totalIncome = Object.values(monthlyTransactions).reduce((sum, month) => sum + month.income, 0);
-
-    const averageMonthlyExpenses = totalExpenses / monthCount;
-    const averageMonthlyIncome = totalIncome / monthCount;
-
-    return {
-      averageMonthlyExpenses,
-      averageMonthlyIncome,
-      totalTransactionsCount
-    };
+    }, {} as Record<string, MonthlyData>);
   },
 
-  async getExpensesByCategory() {
+  async getExpensesByCategory(): Promise<Record<string, number>> {
     const transactions = await this.getTransactions();
-    const expenses = transactions.filter(t => t.amount < 0);
-    
-    return expenses.reduce((acc, t) => {
-      const category = t.category || 'Non catégorisé';
-      if (!acc[category]) {
-        acc[category] = 0;
-      }
-      acc[category] += Math.abs(t.amount);
-      return acc;
-    }, {} as Record<string, number>);
+    return transactions
+      .filter(t => t.amount < 0)
+      .reduce((acc, t) => {
+        const category = t.category || 'Non catégorisé';
+        acc[category] = (acc[category] || 0) + Math.abs(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
   },
 
-  async getExpensesByPaymentType() {
+  async getExpensesByPaymentType(): Promise<Record<string, number>> {
     const transactions = await this.getTransactions();
-    const expenses = transactions.filter(t => t.amount < 0);
-    
-    return expenses.reduce((acc, t) => {
-      const paymentType = t.paymentMethod || 'Non spécifié';
-      if (!acc[paymentType]) {
-        acc[paymentType] = 0;
-      }
-      acc[paymentType] += Math.abs(t.amount);
-      return acc;
-    }, {} as Record<string, number>);
+    return transactions
+      .filter(t => t.amount < 0)
+      .reduce((acc, t) => {
+        const paymentType = t.paymentMethod || 'Non spécifié';
+        acc[paymentType] = (acc[paymentType] || 0) + Math.abs(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
   },
 
-  async getExpensesOverTime() {
+  async getExpensesOverTime(): Promise<Record<string, { expenses: number; income: number }>> {
     const transactions = await this.getTransactions();
     return transactions.reduce((acc, t) => {
       const date = new Date(t.date);
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!acc[monthYear]) {
-        acc[monthYear] = {
-          expenses: 0,
-          income: 0
-        };
+        acc[monthYear] = { expenses: 0, income: 0 };
       }
 
       if (t.amount < 0) {
