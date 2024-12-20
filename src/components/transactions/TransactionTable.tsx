@@ -19,42 +19,62 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTransactions } from "@/hooks/use-transactions";
 
-interface TransactionTableProps {
-  transactions: Transaction[];
-  categories: string[];
-  paymentTypes: string[];
-  onUpdateTransaction: (transaction: Transaction) => void;
-  onDeleteTransaction: (id: string) => void;
-}
-
-const TransactionTable = ({
-  transactions,
-  categories,
-  paymentTypes,
-  onUpdateTransaction,
-  onDeleteTransaction,
-}: TransactionTableProps) => {
+const TransactionTable = () => {
+  const { transactions, categories, paymentTypes, loading, error, updateTransaction, deleteTransaction } = useTransactions();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
 
-  const handleSaveEdit = () => {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 p-4 text-center">
+        {error}
+      </div>
+    );
+  }
+
+  const handleSaveEdit = async () => {
     if (editingTransaction) {
-      onUpdateTransaction(editingTransaction);
-      setEditingTransaction(null);
-      toast({
-        title: "Transaction mise à jour",
-        description: "La transaction a été modifiée avec succès.",
-      });
+      const success = await updateTransaction(editingTransaction);
+      if (success) {
+        setEditingTransaction(null);
+        toast({
+          title: "Transaction mise à jour",
+          description: "La transaction a été modifiée avec succès.",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la mise à jour de la transaction.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleDelete = (id: string) => {
-    onDeleteTransaction(id);
-    toast({
-      title: "Transaction supprimée",
-      description: "La transaction a été supprimée avec succès.",
-    });
+  const handleDelete = async (id: string) => {
+    const success = await deleteTransaction(id);
+    if (success) {
+      toast({
+        title: "Transaction supprimée",
+        description: "La transaction a été supprimée avec succès.",
+      });
+    } else {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression de la transaction.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -123,8 +143,7 @@ const TransactionTable = ({
                     setEditingTransaction({
                       ...editingTransaction,
                       date: e.target.value,
-                    })
-                  }
+                    })}
                 />
               </div>
               <div>
@@ -135,8 +154,7 @@ const TransactionTable = ({
                     setEditingTransaction({
                       ...editingTransaction,
                       description: e.target.value,
-                    })
-                  }
+                    })}
                 />
               </div>
               <div>
@@ -148,8 +166,7 @@ const TransactionTable = ({
                     setEditingTransaction({
                       ...editingTransaction,
                       amount: parseFloat(e.target.value),
-                    })
-                  }
+                    })}
                 />
               </div>
               <div>
@@ -161,8 +178,7 @@ const TransactionTable = ({
                     setEditingTransaction({
                       ...editingTransaction,
                       category: e.target.value as Transaction['category'],
-                    })
-                  }
+                    })}
                 >
                   {categories.filter(cat => cat !== "Tous").map((category) => (
                     <option key={category} value={category}>
@@ -180,8 +196,7 @@ const TransactionTable = ({
                     setEditingTransaction({
                       ...editingTransaction,
                       type: e.target.value as Transaction['type'],
-                    })
-                  }
+                    })}
                 >
                   {paymentTypes.filter(type => type !== "Tous").map((type) => (
                     <option key={type} value={type}>
