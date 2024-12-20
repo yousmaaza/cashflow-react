@@ -1,32 +1,15 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTransactionFilters } from "@/hooks/use-transaction-filters";
+import { getCategories, getPaymentTypes } from "@/services/api";
 
 export interface TransactionFiltersProps {
   onResetFilters: () => void;
 }
-
-const categories = [
-  { value: "Tous", label: "Toutes les catégories" },
-  { value: "Alimentation", label: "Alimentation" },
-  { value: "Transport", label: "Transport" },
-  { value: "Loisirs", label: "Loisirs" },
-  { value: "Logement", label: "Logement" },
-  { value: "Santé", label: "Santé" },
-  { value: "Shopping", label: "Shopping" },
-  { value: "Autres", label: "Autres" }
-];
-
-const paymentTypes = [
-  { value: "Tous", label: "Tous les types" },
-  { value: "CB", label: "Carte bancaire" },
-  { value: "Espèces", label: "Espèces" },
-  { value: "Virement", label: "Virement" },
-  { value: "Prélèvement", label: "Prélèvement" }
-];
 
 const TransactionFilters = ({ onResetFilters }: TransactionFiltersProps) => {
   const {
@@ -38,14 +21,32 @@ const TransactionFilters = ({ onResetFilters }: TransactionFiltersProps) => {
     setMontantMax,
   } = useTransactionFilters();
 
+  const [categories, setCategories] = useState<string[]>([]);
+  const [paymentTypes, setPaymentTypes] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const categories = await getCategories();
+      setCategories(categories);
+    };
+
+    const fetchPaymentTypes = async () => {
+      const paymentTypes = await getPaymentTypes();
+      setPaymentTypes(paymentTypes);
+    };
+
+    fetchCategories();
+    fetchPaymentTypes();
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
           <Label>Date</Label>
-          <DatePicker 
-            date={filters.date} 
-            setDate={setDate} 
+          <DatePicker
+            date={filters.date}
+            setDate={setDate}
           />
         </div>
 
@@ -57,8 +58,8 @@ const TransactionFilters = ({ onResetFilters }: TransactionFiltersProps) => {
             </SelectTrigger>
             <SelectContent>
               {categories.map(category => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
+                <SelectItem key={category} value={category}>
+                  {category}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -73,8 +74,8 @@ const TransactionFilters = ({ onResetFilters }: TransactionFiltersProps) => {
             </SelectTrigger>
             <SelectContent>
               {paymentTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
+                <SelectItem key={type} value={type}>
+                  {type}
                 </SelectItem>
               ))}
             </SelectContent>

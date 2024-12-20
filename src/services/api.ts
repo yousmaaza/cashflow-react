@@ -34,5 +34,13 @@ export const uploadPDF = async (file: File) => {
   });
   return response.data;
 };
+export const getCategories = async (): Promise<string[]> => {
+    const response = await api.get('/transaction-categories');
+    return response.data;
+    };
+export const getPaymentTypes = async (): Promise<string[]> => {
+    const response = await api.get('/transaction-types');
+    return response.data;
+    };
 
 export default api;
