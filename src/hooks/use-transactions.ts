@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Transaction } from '@/data/mockTransactions';
-
-const API_URL = 'http://localhost:8000';
+import * as api from '@/services/api';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -14,12 +12,12 @@ export const useTransactions = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/transactions`);
-      setTransactions(response.data);
+      const data = await api.getTransactions();
+      setTransactions(data);
       
       // Extract unique categories and payment types
-      const uniqueCategories = [...new Set(response.data.map((t: Transaction) => t.category))];
-      const uniquePaymentTypes = [...new Set(response.data.map((t: Transaction) => t.type))];
+      const uniqueCategories = [...new Set(data.map((t: Transaction) => t.category))];
+      const uniquePaymentTypes = [...new Set(data.map((t: Transaction) => t.type))];
       
       setCategories(['Tous', ...uniqueCategories]);
       setPaymentTypes(['Tous', ...uniquePaymentTypes]);
@@ -34,7 +32,7 @@ export const useTransactions = () => {
 
   const updateTransaction = async (transaction: Transaction) => {
     try {
-      await axios.put(`${API_URL}/transactions/${transaction.id}`, transaction);
+      await api.updateTransaction(transaction.id, transaction);
       await fetchTransactions(); // Refresh the list after update
       return true;
     } catch (err) {
@@ -46,7 +44,7 @@ export const useTransactions = () => {
 
   const deleteTransaction = async (id: string) => {
     try {
-      await axios.delete(`${API_URL}/transactions/${id}`);
+      await api.deleteTransaction(id);
       await fetchTransactions(); // Refresh the list after delete
       return true;
     } catch (err) {
@@ -58,15 +56,7 @@ export const useTransactions = () => {
 
   const uploadPDF = async (file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      await axios.post(`${API_URL}/upload-pdf`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
+      await api.uploadPDF(file);
       await fetchTransactions(); // Refresh the list after upload
       return true;
     } catch (err) {
@@ -89,5 +79,6 @@ export const useTransactions = () => {
     updateTransaction,
     deleteTransaction,
     uploadPDF,
+    refresh: fetchTransactions,
   };
 };
