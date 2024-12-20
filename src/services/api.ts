@@ -1,46 +1,89 @@
 import axios from 'axios';
-import { Transaction } from '@/data/mockTransactions';
 
-const API_BASE_URL = 'http://localhost:8000';
+export interface Transaction {
+  id: number;
+  amount: number;
+  date: string;
+  description: string;
+  category: string;
+  type: string;
+  paymentMethod: string;
+}
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
+interface DashboardStats {
+  averageMonthlyExpenses: number;
+  averageMonthlyIncome: number;
+  totalTransactionsCount: number;
+}
+
+interface MonthlyData {
+  expenses: number;
+  income: number;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const api = {
+  async getTransactions(): Promise<Transaction[]> {
+    const response = await axios.get(`${API_URL}/transactions`);
+    return response.data;
   },
-});
 
-export const getTransactions = async (): Promise<Transaction[]> => {
-  const response = await api.get('/transactions');
-  return response.data;
-};
+  async getDashboardStats(): Promise<DashboardStats> {
+    const transactions = await this.getTransactions();
+    const monthlyData = this.groupTransactionsByMonth(transactions);
 
-export const updateTransaction = async (id: string, transaction: Transaction) => {
-  const response = await api.put(`/transactions/${id}`, transaction);
-  return response.data;
-};
+    const monthCount = Object.keys(monthlyData).length || 1;
+    const totalExpenses = Object.values(monthlyData).reduce((sum, month) => sum + month.expenses, 0);
+    const totalIncome = Object.values(monthlyData).reduce((sum, month) => sum + month.income, 0);
 
-export const deleteTransaction = async (id: string) => {
-  await api.delete(`/transactions/${id}`);
-};
-
-export const uploadPDF = async (file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await api.post('/upload-pdf', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-};
-export const getCategories = async (): Promise<string[]> => {
-    const response = await api.get('/transaction-categories');
-    return response.data;
+    return {
+      averageMonthlyExpenses: totalExpenses / monthCount,
+      averageMonthlyIncome: totalIncome / monthCount,
+      totalTransactionsCount: transactions.length
     };
-export const getPaymentTypes = async (): Promise<string[]> => {
-    const response = await api.get('/transaction-types');
-    return response.data;
-    };
+  },
+
+  private groupTransactionsByMonth(transactions: Transaction[]): Record<string, MonthlyData> {
+    return transactions.reduce((acc, t) => {
+      const date = new Date(t.date);
+      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      
+      if (!acc[monthKey]) {
+        acc[monthKey] = { expenses: 0, income: 0 };
+      }
+
+      if (t.amount < 0) {
+        acc[monthKey].expenses += Math.abs(t.amount);
+      } else {
+        acc[monthKey].income += t.amount;
+      }
+
+      return acc;
+    }, {} as Record<string, MonthlyData>);
+  },
+
+  async getExpensesByCategory(): Promise<Record<string, number>> {
+    const transactions = await this.getTransactions();
+    return transactions
+      .filter(t => t.amount < 0)
+      .reduce((acc, t) => {
+        const category = t.category || 'Non catégorisé';
+        acc[category] = (acc[category] || 0) + Math.abs(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+  },
+
+  async getExpensesByPaymentType(): Promise<Record<string, number>> {
+    const transactions = await this.getTransactions();
+    return transactions
+      .filter(t => t.amount < 0)
+      .reduce((acc, t) => {
+        const paymentType = t.paymentMethod || 'Non spécifié';
+        acc[paymentType] = (acc[paymentType] || 0) + Math.abs(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+  }
+};
 
 export default api;
