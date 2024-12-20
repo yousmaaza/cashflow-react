@@ -1,18 +1,30 @@
-import { ThemeProvider } from "@/components/providers/theme-provider"
-import { RouterProvider } from "react-router-dom"
-import { router } from "@/routes"
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '@/components/providers/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
+import { RouterProvider } from 'react-router-dom'
+import { router } from '@/routes'
 
-function App() {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+})
+
+export default function App() {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <RouterProvider router={router} />
+        <Toaster />
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
-
-export default App
