@@ -1,5 +1,3 @@
-@import "react-day-picker/dist/style.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +6,7 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    
+ 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
  
@@ -66,29 +64,13 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
   }
-
+}
+ 
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-  }
-
-  /* Styles spécifiques pour le DatePicker */
-  .rdp {
-    @apply !bg-background;
-  }
-
-  .rdp-day {
-    @apply text-foreground hover:!bg-muted;
-  }
-
-  .rdp-day_selected {
-    @apply !bg-primary text-primary-foreground hover:!bg-primary/90;
-  }
-
-  .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
-    @apply !bg-accent;
   }
 }
