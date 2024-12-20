@@ -24,10 +24,10 @@ const Transactions = () => {
   };
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesCategory = selectedCategory === "all" || transaction.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || transaction.categorie === selectedCategory;
     const matchesType = selectedPaymentType === "all" || transaction.type === selectedPaymentType;
-    const matchesMinAmount = !minAmount || transaction.amount >= parseFloat(minAmount);
-    const matchesMaxAmount = !maxAmount || transaction.amount <= parseFloat(maxAmount);
+    const matchesMinAmount = !minAmount || transaction.montant >= parseFloat(minAmount);
+    const matchesMaxAmount = !maxAmount || transaction.montant <= parseFloat(maxAmount);
     
     let matchesDateRange = true;
     if (startDate && endDate) {
