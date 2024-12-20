@@ -1,43 +1,62 @@
-import React, { useState } from 'react';
-import { uploadPDF } from '../../services/api';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Upload } from "lucide-react";
+import { useTransactions } from "@/hooks/use-transactions";
 
-const PDFUploader: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const PDFUploader = () => {
+  const [uploading, setUploading] = useState(false);
+  const { uploadPDF } = useTransactions();
+  const { toast } = useToast();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setLoading(true);
-    setError(null);
-
+    setUploading(true);
     try {
-      await uploadPDF(file);
-      // Handle successful upload
-    } catch (err) {
-      setError('Error uploading file');
-      console.error(err);
+      const success = await uploadPDF(file);
+      if (success) {
+        toast({
+          title: "PDF importé avec succès",
+          description: "Les transactions ont été mises à jour.",
+        });
+      } else {
+        throw new Error("Échec de l'upload");
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur lors de l'import",
+        description: "Une erreur est survenue lors de l'import du PDF.",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-4">
+    <div>
       <input
         type="file"
+        id="pdf-upload"
         accept=".pdf"
-        onChange={handleFileUpload}
-        className="block w-full text-sm text-gray-500
-          file:mr-4 file:py-2 file:px-4
-          file:rounded-full file:border-0
-          file:text-sm file:font-semibold
-          file:bg-violet-50 file:text-violet-700
-          hover:file:bg-violet-100"
+        onChange={handleFileChange}
+        className="hidden"
       />
-      {loading && <p className="mt-2 text-gray-600">Uploading...</p>}
-      {error && <p className="mt-2 text-red-500">{error}</p>}
+      <label htmlFor="pdf-upload">
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          disabled={uploading}
+          asChild
+        >
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            {uploading ? "Import en cours..." : "Importer PDF"}
+          </div>
+        </Button>
+      </label>
     </div>
   );
 };
