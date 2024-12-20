@@ -1,64 +1,69 @@
-# Application de Gestion de Cashflow
+# Welcome to your Lovable project
 
-Une application web moderne développée avec React et Vite pour gérer et suivre vos flux de trésorerie personnels ou professionnels.
+## Project info
 
-## 🚀 Fonctionnalités
+**URL**: https://lovable.dev/projects/c18d6c68-bccd-4e99-8bb0-b62806d95c52
 
-- Interface utilisateur moderne et responsive
-- Gestion des entrées et sorties d'argent
-- Visualisation des données avec des graphiques
-- Mode sombre/clair
-- Interface responsive adaptée à tous les appareils
+## How can I edit this code?
 
-## 🛠 Technologies Utilisées
+There are several ways of editing your application.
 
-- [React 18](https://reactjs.org/) - Bibliothèque UI
-- [Vite](https://vitejs.dev/) - Outil de build
-- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
-- [Recharts](https://recharts.org/) - Bibliothèque de graphiques
-- [Lucide React](https://lucide.dev/) - Icônes modernes
-- [Radix UI](https://www.radix-ui.com/) - Composants UI accessibles
+**Use Lovable**
 
-## 🚦 Pour Commencer
+Simply visit the [Lovable Project](https://lovable.dev/projects/c18d6c68-bccd-4e99-8bb0-b62806d95c52) and start prompting.
 
-1. Clonez le repository
-   ```bash
-   git clone https://github.com/yousmaaza/cashflow-react.git
-   ```
+Changes made via Lovable will be committed automatically to this repo.
 
-2. Installez les dépendances
-   ```bash
-   npm install
-   ```
+**Use your preferred IDE**
 
-3. Lancez le serveur de développement
-   ```bash
-   npm run dev
-   ```
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-4. Ouvrez [http://localhost:5173](http://localhost:5173) dans votre navigateur
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-## 🛠 Scripts Disponibles
+Follow these steps:
 
-- `npm run dev` - Lance le serveur de développement
-- `npm run build` - Crée une version de production
-- `npm run lint` - Vérifie le code avec ESLint
-- `npm run preview` - Prévisualise la version de production
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-## 🤝 Contribution
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
+# Step 3: Install the necessary dependencies.
+npm i
 
-1. Forker le projet
-2. Créer votre branche (`git checkout -b feature/AmazingFeature`)
-3. Commiter vos changements (`git commit -m 'feat: Ajout d'une fonctionnalité'`)
-4. Pusher vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
 
-## 📝 License
+**Edit a file directly in GitHub**
 
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## 🤝 Support
+**Use GitHub Codespaces**
 
-Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue sur le repository GitHub.
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with .
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/c18d6c68-bccd-4e99-8bb0-b62806d95c52) and click on Share -> Publish.
+
+## I want to use a custom domain - is that possible?
+
+We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
