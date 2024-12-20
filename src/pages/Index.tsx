@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Calculator, TrendingUp, ListTodo } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import KPICard from '@/components/dashboard/KPICard';
 import ExpensesByCategoryChart from '@/components/dashboard/ExpensesByCategoryChart';
 import ExpensesByPaymentTypeChart from '@/components/dashboard/ExpensesByPaymentTypeChart';
 import ExpensesOverTimeChart from '@/components/dashboard/ExpensesOverTimeChart';
-import { transactionService, Transaction } from '@/services/transactionService';
-import { Card } from '@/components/ui/card';
+import api, { Transaction } from '@/services/api';
 
 interface DashboardStats {
   averageMonthlyExpenses: number;
@@ -20,12 +20,12 @@ const Index = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
         setLoading(true);
         const [transactions, dashboardStats] = await Promise.all([
-          transactionService.getTransactions(),
-          transactionService.getDashboardStats()
+          api.getTransactions(),
+          api.getDashboardStats()
         ]);
         setTransactions(transactions);
         setStats(dashboardStats);
@@ -37,7 +37,7 @@ const Index = () => {
       }
     };
 
-    fetchData();
+    fetchDashboardData();
   }, []);
 
   if (error) {
@@ -48,6 +48,20 @@ const Index = () => {
       </Card>
     );
   }
+
+  const formatCurrency = (value: number | null) => {
+    if (value === null) return '0,00 €';
+    return value.toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2
+    });
+  };
+
+  const formatNumber = (value: number | null) => {
+    if (value === null) return '0';
+    return value.toLocaleString('fr-FR');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,19 +74,21 @@ const Index = () => {
             value={stats?.averageMonthlyExpenses}
             icon={<Calculator className="h-6 w-6" />}
             loading={loading}
+            valueFormatter={formatCurrency}
           />
           <KPICard
             title="Moyenne mensuelle des revenus"
             value={stats?.averageMonthlyIncome}
             icon={<TrendingUp className="h-6 w-6" />}
             loading={loading}
+            valueFormatter={formatCurrency}
           />
           <KPICard
             title="Nombre total d'opérations"
             value={stats?.totalTransactionsCount}
             icon={<ListTodo className="h-6 w-6" />}
             loading={loading}
-            valueFormatter={(value) => value?.toString() || '0'}
+            valueFormatter={formatNumber}
           />
         </div>
 
